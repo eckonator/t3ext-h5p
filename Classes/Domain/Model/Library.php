@@ -150,13 +150,14 @@ class Library extends AbstractEntity
     /**
      * Library constructor.
      */
-    public function __construct()
+    public function __construct(\MichielRoos\H5p\Domain\Repository\LibraryDependencyRepository $libraryDependencyRepository)
     {
         $this->libraryDependencies = new ObjectStorage();
         $this->contents = new ObjectStorage();
         $this->contentDependencies = new ObjectStorage();
         $this->libraryDependencies = new ObjectStorage();
         $this->libraryTranslations = new ObjectStorage();
+        $this->libraryDependencyRepository = $libraryDependencyRepository;
     }
 
     /**
@@ -307,14 +308,6 @@ class Library extends AbstractEntity
     public function setContents(ObjectStorage $contents): void
     {
         $this->contents = $contents;
-    }
-
-    /**
-     * @param LibraryDependencyRepository $libraryDependencyRepository
-     */
-    public function injectLibraryDepencencyRepository(LibraryDependencyRepository $libraryDependencyRepository): void
-    {
-        $this->libraryDependencyRepository = $libraryDependencyRepository;
     }
 
     /**
@@ -720,7 +713,7 @@ class Library extends AbstractEntity
      */
     public function getDependentLibraries(): array
     {
-        $dependencies = $this->libraryDependencyRepository->findByRequiredLibrary($this)->toArray();
+        $dependencies = $this->libraryDependencyRepository->findBy(['requiredLibrary' => $this])->toArray();
         return array_map(function ($libraryDependency) {
             /** @var LibraryDependency $libraryDependency */
             return $libraryDependency->getLibrary();

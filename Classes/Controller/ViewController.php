@@ -48,22 +48,9 @@ class ViewController extends ActionController
      * @var CoreFactory|object
      */
     private $h5pCore;
-
-    /**
-     * Inject content repository
-     * @param ContentRepository $contentRepository
-     */
-    public function injectContentRepository(ContentRepository $contentRepository): void
+    public function __construct(\MichielRoos\H5p\Domain\Repository\ContentRepository $contentRepository, \MichielRoos\H5p\Domain\Repository\ContentResultRepository $contentResultRepository)
     {
         $this->contentRepository = $contentRepository;
-    }
-
-    /**
-     * Inject content result repository
-     * @param ContentResultRepository $contentResultRepository
-     */
-    public function injectContentResultRepository(ContentResultRepository $contentResultRepository): void
-    {
         $this->contentResultRepository = $contentResultRepository;
     }
 
@@ -72,7 +59,7 @@ class ViewController extends ActionController
      */
     public function initializeAction(): void
     {
-        $this->contentObjectRenderer = $this->configurationManager->getContentObject();
+        $this->contentObjectRenderer = $this->request->getAttribute('currentContentObject');
 
         $this->language = ($this->getLanguageService()->lang === 'default') ? 'en' : $this->getLanguageService()->lang;
 
@@ -390,7 +377,7 @@ class ViewController extends ActionController
 
         $user = $GLOBALS['TSFE']->fe_user->user;
 
-        $statistics = $this->contentResultRepository->findByUser((int)$user['uid']);
+        $statistics = $this->contentResultRepository->findBy(['user' => (int)$user['uid']]);
         if (!$statistics) {
             $this->view->assign('statisticsNotFound', true);
             return $this->htmlResponse(null);

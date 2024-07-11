@@ -62,25 +62,10 @@ class UploadedFileReferenceConverter extends AbstractTypeConverter
     protected HashService $hashService;
     protected PersistenceManager $persistenceManager;
     protected array $convertedResources = [];
-    /**
-     * @param ResourceFactory $resourceFactory
-     */
-    public function injectResourceFactory(ResourceFactory $resourceFactory): void
+    public function __construct(\TYPO3\CMS\Core\Resource\ResourceFactory $resourceFactory, \TYPO3\CMS\Extbase\Security\Cryptography\HashService $hashService, \TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager $persistenceManager)
     {
         $this->resourceFactory = $resourceFactory;
-    }
-    /**
-     * @param HashService $hashService
-     */
-    public function injectHashService(HashService $hashService): void
-    {
         $this->hashService = $hashService;
-    }
-    /**
-     * @param PersistenceManager $persistenceManager
-     */
-    public function injectPersistenceManager(PersistenceManager $persistenceManager): void
-    {
         $this->persistenceManager = $persistenceManager;
     }
     /**

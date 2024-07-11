@@ -49,7 +49,7 @@ class AjaxController extends ActionController
 
         if (GeneralUtility::makeInstance(Context::class)->getPropertyFromAspect('frontend.user', 'isLoggedIn')) {
             $user = $GLOBALS['TSFE']->fe_user->user;
-            $postData = GeneralUtility::_POST();
+            $postData = $this->request->getParsedBody();
             if (!array_key_exists('time', $postData)) {
                 $postData['time'] = 0;
             }

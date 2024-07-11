@@ -93,8 +93,7 @@ class TCA
             ->from('tx_h5p_domain_model_library')->where($queryBuilder->expr()->eq(
             'uid',
             $queryBuilder->createNamedParameter($uid, \PDO::PARAM_INT)
-        ))->executeQuery()
-            ->fetch();
+        ))->executeQuery()->fetchAssociative();
         return $libraryRow;
     }
 
@@ -132,8 +131,7 @@ class TCA
             ->from('tx_h5p_domain_model_content')->where($queryBuilder->expr()->eq(
             'uid',
             $queryBuilder->createNamedParameter($uid, \PDO::PARAM_INT)
-        ))->executeQuery()
-            ->fetch();
+        ))->executeQuery()->fetchAssociative();
         return $contentRow;
     }
 

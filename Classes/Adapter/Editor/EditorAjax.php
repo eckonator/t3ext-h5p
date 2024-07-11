@@ -49,7 +49,7 @@ class EditorAjax implements \H5PEditorAjaxInterface
             'minorVersion' => QueryInterface::ORDER_DESCENDING
         ]);
 
-        $librariesOrderedByMajorAndMinorVersion = $this->libraryRepository->findByRunnable(1);
+        $librariesOrderedByMajorAndMinorVersion = $this->libraryRepository->findBy(['runnable' => 1]);
 
         $versionInformation = [];
         /** @var Library $library */
@@ -65,6 +65,7 @@ class EditorAjax implements \H5PEditorAjaxInterface
                 'major_version' => $library->getMajorVersion(),
                 'minor_version' => $library->getMinorVersion(),
                 'patch_version' => $library->getPatchVersion(),
+                'patch_version_in_folder_name' => $library->getPatchVersion(),
                 'restricted'    => $library->isRestricted(),
                 'has_icon'      => $library->isHasIcon()
             ];
@@ -84,7 +85,7 @@ class EditorAjax implements \H5PEditorAjaxInterface
     public function getContentTypeCache($machineName = NULL)
     {
         if ($machineName != null) {
-            return $this->contentTypeCacheEntryRepository->findOneByMachineName($machineName);
+            return $this->contentTypeCacheEntryRepository->findOneBy(['machineName' => $machineName]);
         }
 
         return $this->contentTypeCacheEntryRepository->getContentTypeCacheObjects();
