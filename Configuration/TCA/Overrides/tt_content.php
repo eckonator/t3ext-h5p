@@ -1,4 +1,7 @@
 <?php
+
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+
 defined('TYPO3_MODE') or die('¯\_(ツ)_/¯');
 
 /*
@@ -14,7 +17,7 @@ defined('TYPO3_MODE') or die('¯\_(ツ)_/¯');
  * The TYPO3 project - inspiring people to share!
  */
 
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTCAcolumns(
+ExtensionManagementUtility::addTCAcolumns(
     'tt_content',
     [
         'tx_h5p_content'         => [
@@ -52,13 +55,13 @@ defined('TYPO3_MODE') or die('¯\_(ツ)_/¯');
                     ['LLL:EXT:h5p/Resources/Private/Language/Tca.xlf:tt_content.tx_h5p_display_options.I.4', ''], // 16
                 ],
                 'cols'    => 2,
-                'default' => \H5PCore::DISABLE_FRAME + \H5PCore::DISABLE_COPYRIGHT // 1 + 8
+                'default' => H5PCore::DISABLE_FRAME + H5PCore::DISABLE_COPYRIGHT // 1 + 8
             ],
         ],
     ]
 );
 
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addFieldsToPalette(
+ExtensionManagementUtility::addFieldsToPalette(
     'tt_content',
     'h5p',
     'tx_h5p_content,--linebreak--,tx_h5p_display_options'
@@ -67,7 +70,7 @@ defined('TYPO3_MODE') or die('¯\_(ツ)_/¯');
 // This is needed for addToAllTCAtypes to work
 $GLOBALS['TCA']['tt_content']['types']['h5p_view']['showitem'] = '';
 
-\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addToAllTCAtypes(
+ExtensionManagementUtility::addToAllTCAtypes(
     'tt_content',
     '--palette--;LLL:EXT:cms/locallang_ttc.xlf:palette.general;general,
      --palette--;LLL:EXT:cms/locallang_ttc.xlf:palette.header;header,

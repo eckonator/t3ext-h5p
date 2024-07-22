@@ -14,21 +14,37 @@ namespace MichielRoos\H5p\Adapter\Core;
  * The TYPO3 project - inspiring people to share!
  */
 
+use H5PCore;
+use H5peditorFile;
+use H5PFileStorage;
 use MichielRoos\H5p\Domain\Model\CachedAsset;
 use MichielRoos\H5p\Domain\Repository\CachedAssetRepository;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileInfo;
 use TYPO3\CMS\Core\Resource\DuplicationBehavior;
+use TYPO3\CMS\Core\Resource\Exception;
+use TYPO3\CMS\Core\Resource\Exception\AbstractFileOperationException;
+use TYPO3\CMS\Core\Resource\Exception\ExistingTargetFileNameException;
+use TYPO3\CMS\Core\Resource\Exception\ExistingTargetFolderException;
+use TYPO3\CMS\Core\Resource\Exception\FileOperationErrorException;
+use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException;
+use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderWritePermissionsException;
+use TYPO3\CMS\Core\Resource\Exception\InsufficientUserPermissionsException;
+use TYPO3\CMS\Core\Resource\Exception\InvalidPathException;
 use TYPO3\CMS\Core\Resource\Folder;
 use TYPO3\CMS\Core\Resource\ResourceStorage;
 use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Utility\File\ExtendedFileUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Object\ObjectManager;
+use TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException;
 use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
 
 /**
  * Class FileStorage
  */
-class FileStorage implements \H5PFileStorage, SingletonInterface
+class FileStorage implements H5PFileStorage, SingletonInterface
 {
     /**
      * @var string
@@ -65,9 +81,9 @@ class FileStorage implements \H5PFileStorage, SingletonInterface
      *
      * @param ResourceStorage $storage
      * @param string $path
-     * @throws \TYPO3\CMS\Core\Resource\Exception\ExistingTargetFolderException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InsufficientFolderWritePermissionsException
+     * @throws ExistingTargetFolderException
+     * @throws InsufficientFolderAccessPermissionsException
+     * @throws InsufficientFolderWritePermissionsException
      */
     public function __construct(ResourceStorage $storage, $path = 'h5p')
     {
@@ -103,13 +119,13 @@ class FileStorage implements \H5PFileStorage, SingletonInterface
      *
      * @param array $library
      *  Library properties
-     * @throws \TYPO3\CMS\Core\Resource\Exception\ExistingTargetFolderException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InsufficientFolderWritePermissionsException
+     * @throws ExistingTargetFolderException
+     * @throws InsufficientFolderAccessPermissionsException
+     * @throws InsufficientFolderWritePermissionsException
      */
     public function saveLibrary($library)
     {
-        $name = \H5PCore::libraryToString($library, true);
+        $name = H5PCore::libraryToString($library, true);
         $rootLevelFolder = $this->storage->getRootLevelFolder();
         $destination = 'libraries/' . $name . '/';
         if ($this->folderPrefix) {
@@ -128,8 +144,8 @@ class FileStorage implements \H5PFileStorage, SingletonInterface
         $libraryFolder = $this->storage->createFolder($destination, $rootLevelFolder);
 
         $source = str_replace("\\", '/', $library['uploadDirectory']);
-        /** @var \SplFileInfo $fileInfo */
-        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST) as $fileInfo) {
+        /** @var SplFileInfo $fileInfo */
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST) as $fileInfo) {
             $pathName = $fileInfo->getPathname();
             $pathName = str_replace("\\", '/', $pathName);
             $dir = str_replace($source, '', $pathName);
@@ -156,9 +172,9 @@ class FileStorage implements \H5PFileStorage, SingletonInterface
      *  Path on file system to content directory.
      * @param array $content
      *  Content properties
-     * @throws \TYPO3\CMS\Core\Resource\Exception\ExistingTargetFolderException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InsufficientFolderWritePermissionsException
+     * @throws ExistingTargetFolderException
+     * @throws InsufficientFolderAccessPermissionsException
+     * @throws InsufficientFolderWritePermissionsException
      */
     public function saveContent($source, $content)
     {
@@ -180,8 +196,8 @@ class FileStorage implements \H5PFileStorage, SingletonInterface
         }
         $contentFolder = $this->storage->createFolder($destination, $rootLevelFolder);
 
-        /** @var \SplFileInfo $fileInfo */
-        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST) as $fileInfo) {
+        /** @var SplFileInfo $fileInfo */
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST) as $fileInfo) {
             $pathName = $fileInfo->getPathname();
             $pathName = str_replace("\\", '/', $pathName);
             $dir = str_replace($source, '', $pathName);
@@ -307,7 +323,7 @@ class FileStorage implements \H5PFileStorage, SingletonInterface
      *  A set of all the assets required for content to display
      * @param string $key
      *  Hashed key for cached asset
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException
+     * @throws IllegalObjectTypeException
      */
     public function cacheAssets(&$files, $key)
     {
@@ -421,10 +437,10 @@ class FileStorage implements \H5PFileStorage, SingletonInterface
      * Save files uploaded through the editor.
      * The files must be marked as temporary until the content form is saved.
      *
-     * @param \H5peditorFile $file
+     * @param H5peditorFile $file
      * @param int $contentId
-     * @return \H5peditorFile
-     * @throws \TYPO3\CMS\Core\Resource\Exception
+     * @return H5peditorFile
+     * @throws Exception
      */
     public function saveFile($file, $contentId)
     {
@@ -501,11 +517,11 @@ class FileStorage implements \H5PFileStorage, SingletonInterface
      * @param string $file path + name
      * @param string|int $fromId Content ID or 'editor' string
      * @param int $toId Target Content ID
-     * @throws \TYPO3\CMS\Core\Resource\Exception\AbstractFileOperationException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\ExistingTargetFileNameException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\ExistingTargetFolderException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InsufficientFolderWritePermissionsException
+     * @throws AbstractFileOperationException
+     * @throws ExistingTargetFileNameException
+     * @throws ExistingTargetFolderException
+     * @throws InsufficientFolderAccessPermissionsException
+     * @throws InsufficientFolderWritePermissionsException
      */
     public function cloneContentFile($file, $fromId, $toId)
     {
@@ -540,13 +556,13 @@ class FileStorage implements \H5PFileStorage, SingletonInterface
      * @param string $contentId Id of content
      *
      * @return object Object containing h5p json and content json data
-     * @throws \TYPO3\CMS\Core\Resource\Exception\ExistingTargetFileNameException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\ExistingTargetFolderException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\FileOperationErrorException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InsufficientFolderWritePermissionsException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InsufficientUserPermissionsException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InvalidPathException
+     * @throws ExistingTargetFileNameException
+     * @throws ExistingTargetFolderException
+     * @throws FileOperationErrorException
+     * @throws InsufficientFolderAccessPermissionsException
+     * @throws InsufficientFolderWritePermissionsException
+     * @throws InsufficientUserPermissionsException
+     * @throws InvalidPathException
      */
     public function moveContentDirectory($source, $contentId = null)
     {
@@ -578,8 +594,8 @@ class FileStorage implements \H5PFileStorage, SingletonInterface
             $this->storage->createFolder($destination, $rootLevelFolder);
         }
 
-        /** @var \SplFileInfo $fileInfo */
-        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST) as $fileInfo) {
+        /** @var SplFileInfo $fileInfo */
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST) as $fileInfo) {
             $pathName = $fileInfo->getPathname();
             $dir = str_replace($source, '', $pathName);
             $dir = ltrim($dir, '/');

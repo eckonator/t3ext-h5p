@@ -14,12 +14,13 @@ namespace MichielRoos\H5p\Adapter\Core;
  * The TYPO3 project - inspiring people to share!
  */
 
+use H5PEventBase;
 use TYPO3\CMS\Core\SingletonInterface;
 
 /**
  * Class Event
  */
-class Event extends \H5PEventBase implements SingletonInterface
+class Event extends H5PEventBase implements SingletonInterface
 {
     /**
      * Stores the event data in the database.

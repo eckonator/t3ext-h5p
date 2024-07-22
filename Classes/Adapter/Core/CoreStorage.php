@@ -14,6 +14,9 @@ namespace MichielRoos\H5p\Adapter\Core;
  * The TYPO3 project - inspiring people to share!
  */
 
+use Exception;
+use H5PCore;
+use H5PStorage;
 use TYPO3\CMS\Core\SingletonInterface;
 
 /**
@@ -22,7 +25,7 @@ use TYPO3\CMS\Core\SingletonInterface;
  * Methods savePackage and saveLibraries are overridden because we need to
  * be able to easily call saveLibraryUsage
  */
-class CoreStorage extends \H5PStorage implements SingletonInterface
+class CoreStorage extends H5PStorage implements SingletonInterface
 {
 
     /**
@@ -104,12 +107,12 @@ class CoreStorage extends \H5PStorage implements SingletonInterface
             try {
                 // Save content folder contents
                 $this->h5pC->fs->saveContent($current_path, $content);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->h5pF->setErrorMessage($e->getMessage(), 'save-content-failed');
             }
 
             // Remove temp content folder
-            \H5PCore::deleteFileTree($basePath);
+            H5PCore::deleteFileTree($basePath);
         }
     }
 
@@ -161,7 +164,7 @@ class CoreStorage extends \H5PStorage implements SingletonInterface
             }
 
             // Remove tmp folder
-            \H5PCore::deleteFileTree($library['uploadDirectory']);
+            H5PCore::deleteFileTree($library['uploadDirectory']);
 
             if ($new) {
                 $newOnes++;

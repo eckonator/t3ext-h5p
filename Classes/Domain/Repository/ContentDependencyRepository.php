@@ -15,6 +15,7 @@ namespace MichielRoos\H5p\Domain\Repository;
  */
 use TYPO3\CMS\Extbase\Persistence\Generic\QuerySettingsInterface;
 use TYPO3\CMS\Extbase\Persistence\QueryInterface;
+use TYPO3\CMS\Extbase\Persistence\QueryResultInterface;
 use TYPO3\CMS\Extbase\Persistence\Repository;
 
 /**
@@ -43,7 +44,7 @@ class ContentDependencyRepository extends Repository
     /**
      * @param $content
      * @param $type
-     * @return array|\TYPO3\CMS\Extbase\Persistence\QueryResultInterface
+     * @return array|QueryResultInterface
      */
     public function findByContentAndType($content, $type)
     {

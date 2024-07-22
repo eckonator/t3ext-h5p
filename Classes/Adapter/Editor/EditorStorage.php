@@ -3,16 +3,18 @@
 namespace MichielRoos\H5p\Adapter\Editor;
 
 use H5peditorFile;
+use H5peditorStorage;
 use MichielRoos\H5p\Adapter\Core\Framework;
 use MichielRoos\H5p\Domain\Model\Library;
 use MichielRoos\H5p\Domain\Model\LibraryTranslation;
 use MichielRoos\H5p\Domain\Repository\LibraryRepository;
 use MichielRoos\H5p\Domain\Repository\LibraryTranslationRepository;
+use TYPO3\CMS\Core\Resource\ResourceFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Object\ObjectManager;
 use TYPO3\CMS\Extbase\Persistence\QueryInterface;
 
-class EditorStorage implements \H5peditorStorage
+class EditorStorage implements H5peditorStorage
 {
     /**
      * @var LibraryRepository
@@ -194,7 +196,7 @@ class EditorStorage implements \H5peditorStorage
      */
     public static function saveFileTemporarily($data, $move_file)
     {
-        $resourceFactory = \TYPO3\CMS\Core\Resource\ResourceFactory::getInstance();
+        $resourceFactory = ResourceFactory::getInstance();
         $storage = $resourceFactory->getDefaultStorage();
         $h5pFramework    = GeneralUtility::makeInstance(Framework::class, $storage);
 

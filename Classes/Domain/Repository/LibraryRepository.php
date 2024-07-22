@@ -14,6 +14,7 @@ namespace MichielRoos\H5p\Domain\Repository;
  * The TYPO3 project - inspiring people to share!
  */
 use MichielRoos\H5p\Domain\Model\Library;
+use TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException;
 use TYPO3\CMS\Extbase\Persistence\Generic\QuerySettingsInterface;
 use TYPO3\CMS\Extbase\Persistence\QueryInterface;
 use TYPO3\CMS\Extbase\Persistence\Repository;
@@ -46,7 +47,7 @@ class LibraryRepository extends Repository
 
     /**
      * @param integer $id
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException
+     * @throws IllegalObjectTypeException
      */
     public function removeByLibraryId($id)
     {

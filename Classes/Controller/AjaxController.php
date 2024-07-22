@@ -14,6 +14,7 @@ namespace MichielRoos\H5p\Controller;
  * The TYPO3 project - inspiring people to share!
  */
 
+use H5PCore;
 use MichielRoos\H5p\Domain\Model\Content;
 use MichielRoos\H5p\Domain\Model\ContentResult;
 use MichielRoos\H5p\Domain\Repository\ContentRepository;
@@ -22,6 +23,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Domain\Repository\FrontendUserRepository;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
+use TYPO3\CMS\Lang\LanguageService;
 
 /**
  * Class AjaxController
@@ -31,7 +33,7 @@ class AjaxController extends ActionController
     /**
      * Content repository
      *
-     * @var \MichielRoos\H5p\Domain\Repository\ContentRepository
+     * @var ContentRepository
      */
     protected $contentRepository;
 
@@ -66,7 +68,7 @@ class AjaxController extends ActionController
             $content = $contentRepository->findByUid($postData['contentId']);
             if (!$content instanceof Content) {
                 $error['details'] = 'Content not found';
-                \H5PCore::ajaxError($error['message'], $error['errorCode'], $error['statusCode'], $error['details']);
+                H5PCore::ajaxError($error['message'], $error['errorCode'], $error['statusCode'], $error['details']);
                 exit;
             }
 
@@ -91,10 +93,10 @@ class AjaxController extends ActionController
             }
             $persistenceManager = $this->objectManager->get(PersistenceManager::class);
             $persistenceManager->persistAll();
-            \H5PCore::ajaxSuccess();
+            H5PCore::ajaxSuccess();
             exit;
         }
-        \H5PCore::ajaxError($error['message'], $error['errorCode'], $error['statusCode'], $error['details']);
+        H5PCore::ajaxError($error['message'], $error['errorCode'], $error['statusCode'], $error['details']);
         exit;
     }
 
@@ -108,7 +110,7 @@ class AjaxController extends ActionController
     /**
      * Returns an instance of LanguageService
      *
-     * @return \TYPO3\CMS\Lang\LanguageService
+     * @return LanguageService
      */
     protected function getLanguageService()
     {

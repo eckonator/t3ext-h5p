@@ -14,6 +14,7 @@ namespace MichielRoos\H5p\Validation\Validator;
  * The TYPO3 project - inspiring people to share!
  */
 
+use H5PValidator;
 use MichielRoos\H5p\Adapter\Core\FileStorage;
 use MichielRoos\H5p\Adapter\Core\Framework;
 use MichielRoos\H5p\Domain\Model\FileReference;
@@ -39,7 +40,7 @@ class PackageValidator extends AbstractValidator
         $h5pFramewok->setPackageFile($package);
         $h5pFileStorage = GeneralUtility::makeInstance(FileStorage::class, $storage);
         $h5pCore        = GeneralUtility::makeInstance(CoreFactory::class, $h5pFramewok, $h5pFileStorage, '');
-        $validator      = GeneralUtility::makeInstance(\H5PValidator::class, $h5pFramewok, $h5pCore);
+        $validator      = GeneralUtility::makeInstance(H5PValidator::class, $h5pFramewok, $h5pCore);
 
         $success = $validator->isValidPackage();
 

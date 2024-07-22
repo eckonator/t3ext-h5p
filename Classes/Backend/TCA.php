@@ -13,6 +13,12 @@ namespace MichielRoos\H5p\Backend;
  * The TYPO3 project - inspiring people to share!
  */
 
+use DateTime;
+use Exception;
+use PDO;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\DatabaseConnection;
+use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class TCA
@@ -22,13 +28,13 @@ class TCA
      *
      * @param $parameters
      * @param $parentObject
-     * @throws \Exception
+     * @throws Exception
      */
     public function getConfigSettingTitle(&$parameters, $parentObject)
     {
         $row = $parameters['row'];
         if ($row['config_key'] === 'content_type_cache_updated_at') {
-            $date = \DateTime::createFromFormat('U', (int)$row['config_value']);
+            $date = DateTime::createFromFormat('U', (int)$row['config_value']);
             $parameters['title'] = sprintf(
                 '%s: %s',
                 $row['config_key'],
@@ -54,7 +60,7 @@ class TCA
 
         $row = $parameters['row'];
 
-        $updatedAt = \DateTime::createFromFormat('U', (int)$row['updated_at']);
+        $updatedAt = DateTime::createFromFormat('U', (int)$row['updated_at']);
 
         $parameters['title'] = sprintf(
             '%s: %s %d.%d.%d - %s',
@@ -77,7 +83,7 @@ class TCA
     {
         $libraryRow = $this->getLibraryByUid($parameters['row']['library']);
 
-        $updatedAt = \DateTime::createFromFormat('U', (int)$libraryRow['updated_at']);
+        $updatedAt = DateTime::createFromFormat('U', (int)$libraryRow['updated_at']);
 
         $parameters['title'] = sprintf(
             '%s: %s %d.%d.%d - %s',
@@ -105,14 +111,14 @@ class TCA
                 sprintf('uid=%d', (int)$uid)
             );
         } else {
-            $queryBuilder = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)->getQueryBuilderForTable('tx_h5p_domain_model_library');
-            $queryBuilder->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction::class));
+            $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_h5p_domain_model_library');
+            $queryBuilder->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(DeletedRestriction::class));
             $libraryRow = $queryBuilder->select('*')
                 ->from('tx_h5p_domain_model_library')
                 ->where(
                     $queryBuilder->expr()->eq(
                         'uid',
-                        $queryBuilder->createNamedParameter($uid, \PDO::PARAM_INT)
+                        $queryBuilder->createNamedParameter($uid, PDO::PARAM_INT)
                     )
                 )
                 ->execute()
@@ -122,7 +128,7 @@ class TCA
     }
 
     /**
-     * @return \TYPO3\CMS\Core\Database\DatabaseConnection $dbHandle
+     * @return DatabaseConnection $dbHandle
      */
     protected function getDBHandle()
     {
@@ -164,14 +170,14 @@ class TCA
                 sprintf('uid=%d', (int)$uid)
             );
         } else {
-            $queryBuilder = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)->getQueryBuilderForTable('tx_h5p_domain_model_content');
-            $queryBuilder->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction::class));
+            $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_h5p_domain_model_content');
+            $queryBuilder->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(DeletedRestriction::class));
             $contentRow = $queryBuilder->select('*')
                 ->from('tx_h5p_domain_model_content')
                 ->where(
                     $queryBuilder->expr()->eq(
                         'uid',
-                        $queryBuilder->createNamedParameter($uid, \PDO::PARAM_INT)
+                        $queryBuilder->createNamedParameter($uid, PDO::PARAM_INT)
                     )
                 )
                 ->execute()

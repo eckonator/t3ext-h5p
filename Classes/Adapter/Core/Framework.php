@@ -16,6 +16,8 @@ namespace MichielRoos\H5p\Adapter\Core;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use H5PCore;
+use H5PFrameworkInterface;
 use MichielRoos\H5p\Domain\Model\CachedAsset;
 use MichielRoos\H5p\Domain\Model\ConfigSetting;
 use MichielRoos\H5p\Domain\Model\Content;
@@ -33,23 +35,30 @@ use MichielRoos\H5p\Domain\Repository\ContentTypeCacheEntryRepository;
 use MichielRoos\H5p\Domain\Repository\LibraryDependencyRepository;
 use MichielRoos\H5p\Domain\Repository\LibraryRepository;
 use MichielRoos\H5p\Domain\Repository\LibraryTranslationRepository;
+use PDO;
 use stdClass;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\DatabaseConnection;
+use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
+use TYPO3\CMS\Core\Resource\ResourceFactory;
 use TYPO3\CMS\Core\Resource\ResourceStorage;
 use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Object\ObjectManager;
 use TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException;
+use TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException;
 use TYPO3\CMS\Extbase\Persistence\Generic\Exception;
 use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
 use TYPO3\CMS\Extbase\Persistence\ObjectStorage;
 use TYPO3\CMS\Extbase\Persistence\QueryInterface;
 use TYPO3\CMS\Extbase\Reflection\ObjectAccess;
+use TYPO3\CMS\Lang\LanguageService;
 
 /**
  * Class Framework
  */
-class Framework implements \H5PFrameworkInterface, SingletonInterface
+class Framework implements H5PFrameworkInterface, SingletonInterface
 {
     /**
      * @var string
@@ -62,7 +71,7 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
     protected $contentTypeCacheEntryRepository;
 
     /**
-     * @var \H5PCore
+     * @var H5PCore
      */
     protected $h5pCore;
 
@@ -93,7 +102,7 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
     private $messages = [];
 
     /**
-     * @var mixed|\TYPO3\CMS\Core\Database\DatabaseConnection
+     * @var mixed|DatabaseConnection
      */
     private $databaseLink;
 
@@ -175,7 +184,7 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
     /**
      * Set the current package file to operate on
      *
-     * @param \MichielRoos\H5p\Domain\Model\FileReference $file
+     * @param FileReference $file
      */
     public function setPackageFile(FileReference $file)
     {
@@ -343,13 +352,13 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
     }
 
     /**
-     * @return \H5PCore|CoreFactory|object
+     * @return H5PCore|CoreFactory|object
      */
     protected function getInjectedH5PCore()
     {
         if ($this->h5pCore === null) {
             $language = ($this->getLanguageService()->lang === 'default') ? 'en' : $this->getLanguageService()->lang;
-            $resourceFactory = \TYPO3\CMS\Core\Resource\ResourceFactory::getInstance();
+            $resourceFactory = ResourceFactory::getInstance();
             $storage = $resourceFactory->getDefaultStorage();
             $h5pFramework = GeneralUtility::makeInstance(Framework::class, $storage);
             $h5pFileStorage = GeneralUtility::makeInstance(FileStorage::class, $storage);
@@ -362,7 +371,7 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
     /**
      * Returns an instance of LanguageService
      *
-     * @return \TYPO3\CMS\Lang\LanguageService
+     * @return LanguageService
      */
     protected function getLanguageService()
     {
@@ -459,25 +468,25 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
                 return $row['uid'];
             }
         } else {
-            $queryBuilder = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)->getQueryBuilderForTable('tx_h5p_domain_model_library');
-            $queryBuilder->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction::class));
+            $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_h5p_domain_model_library');
+            $queryBuilder->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(DeletedRestriction::class));
 
             $where = [];
             $where[] = $queryBuilder->expr()->eq(
                 'machine_name',
-                $queryBuilder->createNamedParameter((string)$machineName, \PDO::PARAM_STR)
+                $queryBuilder->createNamedParameter((string)$machineName, PDO::PARAM_STR)
             );
             if ($majorVersion !== null) {
                 // Look for major version
                 $where[] = $queryBuilder->expr()->eq(
                     'major_version',
-                    $queryBuilder->createNamedParameter((string)$majorVersion, \PDO::PARAM_STR)
+                    $queryBuilder->createNamedParameter((string)$majorVersion, PDO::PARAM_STR)
                 );
                 if ($minorVersion !== null) {
                     // Look for minor version
                     $where[] = $queryBuilder->expr()->eq(
                         'minor_version',
-                        $queryBuilder->createNamedParameter((string)$minorVersion, \PDO::PARAM_STR)
+                        $queryBuilder->createNamedParameter((string)$minorVersion, PDO::PARAM_STR)
                     );
                 }
             }
@@ -558,21 +567,21 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
             return $result;
         }
 
-        $queryBuilder = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\ConnectionPool::class)->getQueryBuilderForTable('tx_h5p_domain_model_library');
-        $queryBuilder->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(\TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction::class));
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_h5p_domain_model_library');
+        $queryBuilder->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(DeletedRestriction::class));
 
         $where = [];
         $where[] = $queryBuilder->expr()->eq(
             'machine_name',
-            $queryBuilder->createNamedParameter((string)$library['machineName'], \PDO::PARAM_STR)
+            $queryBuilder->createNamedParameter((string)$library['machineName'], PDO::PARAM_STR)
         );
         $where[] = $queryBuilder->expr()->eq(
             'major_version',
-            $queryBuilder->createNamedParameter((string)$library['majorVersion'], \PDO::PARAM_STR)
+            $queryBuilder->createNamedParameter((string)$library['majorVersion'], PDO::PARAM_STR)
         );
         $where[] = $queryBuilder->expr()->eq(
             'minor_version',
-            $queryBuilder->createNamedParameter((string)$library['minorVersion'], \PDO::PARAM_STR)
+            $queryBuilder->createNamedParameter((string)$library['minorVersion'], PDO::PARAM_STR)
         );
 
         $libraryRow = $queryBuilder->select('patch_version')
@@ -634,8 +643,8 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
      *     - languageCode: Translation in json format
      * @param bool $new
      * @return void
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException
+     * @throws IllegalObjectTypeException
+     * @throws UnknownObjectException
      * @throws \Exception
      */
     public function saveLibraryData(&$libraryData, $new = true)
@@ -700,7 +709,7 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
      *   Main id for the content if this is a system that supports versions
      * @return int
      * @throws Exception\NotImplementedException
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException
+     * @throws IllegalObjectTypeException
      * @throws \Exception
      */
     public function insertContent($contentData, $contentMainId = null)
@@ -731,7 +740,7 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
      *   Main id for the content if this is a system that supports versions
      * @return int
      * @throws IllegalObjectTypeException
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException
+     * @throws UnknownObjectException
      * @throws \Exception
      */
     public function updateContent($contentData, $contentMainId = null)
@@ -780,8 +789,8 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
      *   - preloaded
      *   - dynamic
      * @throws Exception
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException
+     * @throws IllegalObjectTypeException
+     * @throws UnknownObjectException
      */
     public function saveLibraryDependencies($libraryId, $dependencies, $dependency_type)
     {
@@ -1204,8 +1213,8 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
      *   Identifier for the setting
      * @param mixed $value Data
      *   Whatever we want to store as the setting
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException
+     * @throws IllegalObjectTypeException
+     * @throws UnknownObjectException
      */
     public function setOption($name, $value)
     {
@@ -1322,7 +1331,7 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
      *  Hash key for the given libraries
      * @param array $libraries
      *  List of dependencies(libraries) used to create the key
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\UnknownObjectException
+     * @throws UnknownObjectException
      */
     public function saveCachedAssets($key, $libraries)
     {
@@ -1422,7 +1431,7 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
      *
      * @param object $contentTypeCache Json with an array called 'libraries'
      *  containing the new content type cache that should replace the old one.
-     * @throws \TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException
+     * @throws IllegalObjectTypeException
      */
     public function replaceContentTypeCache($contentTypeCache)
     {

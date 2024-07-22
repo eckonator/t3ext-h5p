@@ -15,8 +15,10 @@ namespace MichielRoos\H5p\ViewHelpers\Form;
  */
 
 use TYPO3\CMS\Extbase\Domain\Model\FileReference;
+use TYPO3\CMS\Extbase\Property\Exception;
 use TYPO3\CMS\Extbase\Property\PropertyMapper;
 use TYPO3\CMS\Extbase\Security\Cryptography\HashService;
+use TYPO3\CMS\Fluid\Core\ViewHelper\Exception\InvalidVariableException;
 
 /**
  * Class UploadViewHelper
@@ -24,17 +26,17 @@ use TYPO3\CMS\Extbase\Security\Cryptography\HashService;
 class UploadViewHelper extends \TYPO3\CMS\Fluid\ViewHelpers\Form\UploadViewHelper
 {
     /**
-     * @var \TYPO3\CMS\Extbase\Security\Cryptography\HashService
+     * @var HashService
      */
     protected $hashService;
 
     /**
-     * @var \TYPO3\CMS\Extbase\Property\PropertyMapper
+     * @var PropertyMapper
      */
     protected $propertyMapper;
-    
+
     /**
-     * @param \TYPO3\CMS\Extbase\Security\Cryptography\HashService $hashService
+     * @param HashService $hashService
      */
     public function injectHashService(HashService $hashService)
     {
@@ -42,19 +44,19 @@ class UploadViewHelper extends \TYPO3\CMS\Fluid\ViewHelpers\Form\UploadViewHelpe
     }
 
     /**
-     * @param \TYPO3\CMS\Extbase\Property\PropertyMapper $propertyMapper
+     * @param PropertyMapper $propertyMapper
      */
     public function injectPropertyMapper(PropertyMapper $propertyMapper)
     {
         $this->propertyMapper = $propertyMapper;
     }
-    
+
     /**
      * Render the upload field including possible resource pointer
      *
      * @return string
-     * @throws \TYPO3\CMS\Fluid\Core\ViewHelper\Exception\InvalidVariableException
-     * @throws \TYPO3\CMS\Extbase\Property\Exception
+     * @throws InvalidVariableException
+     * @throws Exception
      * @api
      */
     public function render()
@@ -85,8 +87,8 @@ class UploadViewHelper extends \TYPO3\CMS\Fluid\ViewHelpers\Form\UploadViewHelpe
      * Return a previously uploaded resource.
      * Return NULL if errors occurred during property mapping for this property.
      *
-     * @return \TYPO3\CMS\Extbase\Domain\Model\FileReference
-     * @throws \TYPO3\CMS\Extbase\Property\Exception
+     * @return FileReference
+     * @throws Exception
      */
     protected function getUploadedResource()
     {

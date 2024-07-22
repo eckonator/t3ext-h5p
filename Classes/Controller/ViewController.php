@@ -29,6 +29,7 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\PathUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
+use TYPO3\CMS\Lang\LanguageService;
 
 /**
  * Class ViewController
@@ -38,14 +39,14 @@ class ViewController extends ActionController
     /**
      * Content repository
      *
-     * @var \MichielRoos\H5p\Domain\Repository\ContentRepository
+     * @var ContentRepository
      */
     protected $contentRepository;
 
     /**
      * Content result repository
      *
-     * @var \MichielRoos\H5p\Domain\Repository\ContentResultRepository
+     * @var ContentResultRepository
      */
     protected $contentResultRepository;
 
@@ -81,7 +82,7 @@ class ViewController extends ActionController
 
     /**
      * Inject content repository
-     * @param \MichielRoos\H5p\Domain\Repository\ContentRepository $contentRepository
+     * @param ContentRepository $contentRepository
      */
     public function injectContentRepository(ContentRepository $contentRepository)
     {
@@ -90,7 +91,7 @@ class ViewController extends ActionController
 
     /**
      * Inject content result repository
-     * @param \MichielRoos\H5p\Domain\Repository\ContentResultRepository $contentResultRepository
+     * @param ContentResultRepository $contentResultRepository
      */
     public function injectContentResultRepository(ContentResultRepository $contentResultRepository)
     {
@@ -117,10 +118,10 @@ class ViewController extends ActionController
         $absoluteWebPath = PathUtility::getAbsoluteWebPath(ExtensionManagementUtility::extPath('h5p'));
         $relativeCorePath = $absoluteWebPath . 'Resources/Public/Lib/h5p-core/';
 
-        foreach (\H5PCore::$scripts as $script) {
+        foreach (H5PCore::$scripts as $script) {
             $this->pageRenderer->addJsFooterFile($relativeCorePath . $script, 'text/javascript', false, false, '', true);
         }
-        foreach (\H5PCore::$styles as $style) {
+        foreach (H5PCore::$styles as $style) {
             $this->pageRenderer->addCssFile($relativeCorePath . $style);
         }
 
@@ -130,7 +131,7 @@ class ViewController extends ActionController
     /**
      * Returns an instance of LanguageService
      *
-     * @return \TYPO3\CMS\Lang\LanguageService
+     * @return LanguageService
      */
     protected function getLanguageService()
     {
@@ -157,11 +158,11 @@ class ViewController extends ActionController
 
         $contentSettings = $this->getContentSettings($content);
         $contentSettings['displayOptions'] = [];
-        $contentSettings['displayOptions']['frame'] = (bool)($data['tx_h5p_display_options'] & \H5PCore::DISABLE_FRAME);
-        $contentSettings['displayOptions']['export'] = (bool)($data['tx_h5p_display_options'] & \H5PCore::DISABLE_DOWNLOAD);
-        $contentSettings['displayOptions']['embed'] = (bool)($data['tx_h5p_display_options'] & \H5PCore::DISABLE_EMBED);
-        $contentSettings['displayOptions']['copyright'] = (bool)($data['tx_h5p_display_options'] & \H5PCore::DISABLE_COPYRIGHT);
-        $contentSettings['displayOptions']['icon'] = (bool)($data['tx_h5p_display_options'] & \H5PCore::DISABLE_ABOUT);
+        $contentSettings['displayOptions']['frame'] = (bool)($data['tx_h5p_display_options'] & H5PCore::DISABLE_FRAME);
+        $contentSettings['displayOptions']['export'] = (bool)($data['tx_h5p_display_options'] & H5PCore::DISABLE_DOWNLOAD);
+        $contentSettings['displayOptions']['embed'] = (bool)($data['tx_h5p_display_options'] & H5PCore::DISABLE_EMBED);
+        $contentSettings['displayOptions']['copyright'] = (bool)($data['tx_h5p_display_options'] & H5PCore::DISABLE_COPYRIGHT);
+        $contentSettings['displayOptions']['icon'] = (bool)($data['tx_h5p_display_options'] & H5PCore::DISABLE_ABOUT);
         $this->pageRenderer->addJsInlineCode(
             'H5PIntegration contents cid-' . $content->getUid(),
             'H5PIntegration.contents[\'cid-' . $content->getUid() . '\'] = ' . json_encode($contentSettings) . ';'

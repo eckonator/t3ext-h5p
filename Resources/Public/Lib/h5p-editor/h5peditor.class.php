@@ -55,9 +55,9 @@ class H5peditor {
   /**
    * Constructor for the core editor library.
    *
-   * @param \H5PCore $h5p Instance of core
-   * @param \H5peditorStorage $storage Instance of h5peditor storage interface
-   * @param \H5PEditorAjaxInterface $ajaxInterface Instance of h5peditor ajax
+   * @param H5PCore $h5p Instance of core
+   * @param H5peditorStorage $storage Instance of h5peditor storage interface
+   * @param H5PEditorAjaxInterface $ajaxInterface Instance of h5peditor ajax
    * interface
    */
   function __construct($h5p, $storage, $ajaxInterface) {

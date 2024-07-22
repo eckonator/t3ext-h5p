@@ -14,10 +14,15 @@ namespace MichielRoos\H5p\Domain\Model;
  * The TYPO3 project - inspiring people to share!
  */
 
+use DateTime;
+use Exception;
+use H5PCore;
+use TYPO3\CMS\Extbase\DomainObject\AbstractEntity;
+
 /**
  * Class Content
  */
-class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
+class Content extends AbstractEntity
 {
     /**
      * @var string
@@ -45,7 +50,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     protected $contentType;
 
     /**
-     * @var \DateTime
+     * @var DateTime
      */
     protected $createdAt;
 
@@ -80,7 +85,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     protected $keywords;
 
     /**
-     * @var \MichielRoos\H5p\Domain\Model\Library
+     * @var Library
      */
     protected $library;
 
@@ -125,7 +130,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     protected $parameters;
 
     /**
-     * @var \DateTime
+     * @var DateTime
      */
     protected $updatedAt;
 
@@ -157,12 +162,12 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
      * @param array $contentData
      * @param Library $library
      * @return Content
-     * @throws \Exception
+     * @throws Exception
      */
     public static function createFromContentData(array $contentData, Library $library)
     {
         $content = new Content();
-        $content->setCreatedAt(new \DateTime());
+        $content->setCreatedAt(new DateTime());
 
         $content->updateFromContentData($contentData, $library);
 
@@ -183,11 +188,11 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     /**
      * @param array $contentData
      * @param Library $library
-     * @throws \Exception
+     * @throws Exception
      */
     public function updateFromContentData(array $contentData, Library $library)
     {
-        $this->setUpdatedAt(new \DateTime());
+        $this->setUpdatedAt(new DateTime());
         $this->setFiltered('');
         $this->setLibrary($library);
         if (isset($contentData['disable'])) {
@@ -211,7 +216,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
 
     public function determineEmbedType()
     {
-        $this->setEmbedType(\H5PCore::determineEmbedType('div', $this->getLibrary()->getEmbedTypes()));
+        $this->setEmbedType(H5PCore::determineEmbedType('div', $this->getLibrary()->getEmbedTypes()));
     }
 
     /**
@@ -295,7 +300,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @return \DateTime
+     * @return DateTime
      */
     public function getCreatedAt()
     {
@@ -303,7 +308,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @param \DateTime $createdAt
+     * @param DateTime $createdAt
      */
     public function setCreatedAt($createdAt)
     {
@@ -407,7 +412,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @return \MichielRoos\H5p\Domain\Model\Library
+     * @return Library
      */
     public function getLibrary()
     {
@@ -415,7 +420,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @param \MichielRoos\H5p\Domain\Model\Library $library
+     * @param Library $library
      */
     public function setLibrary($library)
     {
@@ -535,7 +540,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @return \DateTime
+     * @return DateTime
      */
     public function getUpdatedAt()
     {
@@ -543,7 +548,7 @@ class Content extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @param \DateTime $updatedAt
+     * @param DateTime $updatedAt
      */
     public function setUpdatedAt($updatedAt)
     {

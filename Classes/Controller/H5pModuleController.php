@@ -14,10 +14,12 @@ namespace MichielRoos\H5p\Controller;
  * The TYPO3 project - inspiring people to share!
  */
 
+use Exception;
 use H5P_Plugin;
 use H5PContentValidator;
 use H5PCore;
 use H5peditor;
+use InvalidArgumentException;
 use MichielRoos\H5p\Adapter\Core\CoreFactory;
 use MichielRoos\H5p\Adapter\Core\FileStorage;
 use MichielRoos\H5p\Adapter\Core\Framework;
@@ -27,20 +29,30 @@ use MichielRoos\H5p\Domain\Model\Content;
 use MichielRoos\H5p\Domain\Repository\ContentRepository;
 use MichielRoos\H5p\Domain\Repository\LibraryRepository;
 use MichielRoos\H5p\Property\TypeConverter\UploadedFileReferenceConverter;
+use TYPO3\CMS\Backend\Routing\Exception\RouteNotFoundException;
 use TYPO3\CMS\Backend\Routing\UriBuilder as BackendUriBuilder;
 use TYPO3\CMS\Backend\Template\Components\ButtonBar;
+use TYPO3\CMS\Backend\Template\DocumentTemplate;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Backend\View\BackendTemplateView;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
+use TYPO3\CMS\Core\Page\PageRenderer;
+use TYPO3\CMS\Core\Resource\Exception\ExistingTargetFolderException;
+use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException;
+use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderWritePermissionsException;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\PathUtility;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
+use TYPO3\CMS\Extbase\Mvc\Exception\NoSuchArgumentException;
+use TYPO3\CMS\Extbase\Mvc\Exception\StopActionException;
 use TYPO3\CMS\Extbase\Mvc\View\ViewInterface;
 use TYPO3\CMS\Extbase\Mvc\Web\Routing\UriBuilder;
 use TYPO3\CMS\Extbase\Property\PropertyMappingConfiguration;
+use TYPO3\CMS\Lang\LanguageService;
 
 /**
  * Module 'H5P' for the 'h5p' extension.
@@ -120,7 +132,7 @@ class H5pModuleController extends ActionController
     private $h5pEditor;
 
     /**
-     * @var \TYPO3\CMS\Core\Page\PageRenderer
+     * @var PageRenderer
      */
     private $pageRenderer;
 
@@ -179,7 +191,7 @@ class H5pModuleController extends ActionController
     /**
      * Returns the current BE user.
      *
-     * @return \TYPO3\CMS\Core\Authentication\BackendUserAuthentication
+     * @return BackendUserAuthentication
      */
     protected function getBackendUser()
     {
@@ -199,7 +211,7 @@ class H5pModuleController extends ActionController
     /**
      * Returns an instance of LanguageService
      *
-     * @return \TYPO3\CMS\Lang\LanguageService
+     * @return LanguageService
      */
     protected function getLanguageService()
     {
@@ -211,9 +223,9 @@ class H5pModuleController extends ActionController
      *
      * @param ViewInterface $view The view
      * @return void
-     * @throws \TYPO3\CMS\Core\Resource\Exception\ExistingTargetFolderException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException
-     * @throws \TYPO3\CMS\Core\Resource\Exception\InsufficientFolderWritePermissionsException
+     * @throws ExistingTargetFolderException
+     * @throws InsufficientFolderAccessPermissionsException
+     * @throws InsufficientFolderWritePermissionsException
      */
     public function initializeView(ViewInterface $view)
     {
@@ -228,7 +240,7 @@ class H5pModuleController extends ActionController
      * Registers the Icons into the docheader
      *
      * @return void
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     protected function registerDocheaderButtons()
     {
@@ -406,8 +418,8 @@ class H5pModuleController extends ActionController
     /**
      * Create action
      *
-     * @throws \TYPO3\CMS\Extbase\Mvc\Exception\StopActionException
-     * @throws \TYPO3\CMS\Extbase\Mvc\Exception\NoSuchArgumentException
+     * @throws StopActionException
+     * @throws NoSuchArgumentException
      */
     public function createAction()
     {
@@ -472,7 +484,7 @@ class H5pModuleController extends ActionController
         try {
             // Save new content
             $content['id'] = $this->h5pCore->saveContent($content);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->addFlashMessage($e->getMessage(), $e->getCode(), FlashMessage::ERROR);
             $this->forward('new');
         }
@@ -496,7 +508,7 @@ class H5pModuleController extends ActionController
      * @param H5PCore $core
      * @param $content
      * @return void
-     * @throws \TYPO3\CMS\Extbase\Mvc\Exception\NoSuchArgumentException
+     * @throws NoSuchArgumentException
      */
     private function get_disabled_content_features($core, &$content)
     {
@@ -512,8 +524,8 @@ class H5pModuleController extends ActionController
     /**
      * Update action
      *
-     * @throws \TYPO3\CMS\Extbase\Mvc\Exception\StopActionException
-     * @throws \TYPO3\CMS\Extbase\Mvc\Exception\NoSuchArgumentException
+     * @throws StopActionException
+     * @throws NoSuchArgumentException
      */
     public function updateAction()
     {
@@ -586,7 +598,7 @@ class H5pModuleController extends ActionController
             // Save new content
             $content['id'] = $contentId;
             $content['id'] = $this->h5pCore->saveContent($content, $contentId);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->addFlashMessage($e->getMessage(), $e->getCode(), FlashMessage::ERROR);
             $this->forward('new');
         }
@@ -607,7 +619,7 @@ class H5pModuleController extends ActionController
     /**
      * Edit action
      * @param int $contentId
-     * @throws \TYPO3\CMS\Backend\Routing\Exception\RouteNotFoundException
+     * @throws RouteNotFoundException
      */
     public function editAction(int $contentId)
     {
@@ -656,7 +668,7 @@ class H5pModuleController extends ActionController
     /**
      * @param $settings
      * @return mixed
-     * @throws \TYPO3\CMS\Backend\Routing\Exception\RouteNotFoundException
+     * @throws RouteNotFoundException
      */
     public function getEditorSettings($settings)
     {
@@ -715,7 +727,7 @@ class H5pModuleController extends ActionController
      * Get generic h5p settings
      *
      * @return array;
-     * @throws \TYPO3\CMS\Backend\Routing\Exception\RouteNotFoundException
+     * @throws RouteNotFoundException
      */
     public function getCoreSettings()
     {
@@ -909,7 +921,7 @@ class H5pModuleController extends ActionController
     /**
      * New action / upload form
      * @param int $contentId
-     * @throws \TYPO3\CMS\Backend\Routing\Exception\RouteNotFoundException
+     * @throws RouteNotFoundException
      */
     public function newAction(int $contentId = 0)
     {
@@ -949,8 +961,8 @@ class H5pModuleController extends ActionController
     /**
      * Show action
      * @param int $contentId
-     * @throws \TYPO3\CMS\Backend\Routing\Exception\RouteNotFoundException
-     * @throws \TYPO3\CMS\Extbase\Mvc\Exception\StopActionException
+     * @throws RouteNotFoundException
+     * @throws StopActionException
      */
     public function showAction(int $contentId)
     {
@@ -971,7 +983,7 @@ class H5pModuleController extends ActionController
         $abosluteWebPath = PathUtility::getAbsoluteWebPath(ExtensionManagementUtility::extPath('h5p'));
         $relativeCorePath = $abosluteWebPath . 'Resources/Public/Lib/h5p-core/';
 
-        foreach (\H5PCore::$scripts as $script) {
+        foreach (H5PCore::$scripts as $script) {
             $this->pageRenderer->addJsFile($relativeCorePath . $script, 'text/javascript', false, false, '', true);
         }
 
@@ -1159,7 +1171,7 @@ class H5pModuleController extends ActionController
     /**
      * Returns an instance of DocumentTemplate
      *
-     * @return \TYPO3\CMS\Backend\Template\DocumentTemplate
+     * @return DocumentTemplate
      */
     protected function getDocumentTemplate()
     {

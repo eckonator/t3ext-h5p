@@ -14,12 +14,13 @@ namespace MichielRoos\H5p\Adapter\Core;
  * The TYPO3 project - inspiring people to share!
  */
 
+use H5PCore;
 use TYPO3\CMS\Core\SingletonInterface;
 
 /**
  * Class CoreFactory
  */
-class CoreFactory extends \H5PCore implements SingletonInterface
+class CoreFactory extends H5PCore implements SingletonInterface
 {
     /**
      * @param array $dependencies

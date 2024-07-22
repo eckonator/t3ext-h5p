@@ -13,13 +13,19 @@ namespace MichielRoos\H5p\Domain\Model;
  *
  * The TYPO3 project - inspiring people to share!
  */
+
+use DateTime;
+use Exception;
+use H5PCore;
 use MichielRoos\H5p\Domain\Repository\LibraryDependencyRepository;
+use stdClass;
+use TYPO3\CMS\Extbase\DomainObject\AbstractEntity;
 use TYPO3\CMS\Extbase\Persistence\ObjectStorage;
 
 /**
  * Class Library
  */
-class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
+class Library extends AbstractEntity
 {
     /**
      * Title
@@ -34,12 +40,12 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     protected $addTo;
 
     /**
-     * @var \DateTime
+     * @var DateTime
      */
     protected $createdAt;
 
     /**
-     * @var \DateTime
+     * @var DateTime
      */
     protected $updatedAt;
 
@@ -116,22 +122,22 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     // Inversed relations (not in DB)
 
     /**
-     * @var \TYPO3\CMS\Extbase\Persistence\ObjectStorage<Content>
+     * @var ObjectStorage<Content>
      */
     protected $contents;
 
     /**
-     * @var \TYPO3\CMS\Extbase\Persistence\ObjectStorage<\MichielRoos\H5p\Domain\Model\ContentDependency>
+     * @var ObjectStorage<ContentDependency>
      */
     protected $contentDependencies;
 
     /**
-     * @var \TYPO3\CMS\Extbase\Persistence\ObjectStorage<\MichielRoos\H5p\Domain\Model\LibraryDependency>
+     * @var ObjectStorage<LibraryDependency>
      */
     protected $libraryDependencies;
 
     /**
-     * @var \TYPO3\CMS\Extbase\Persistence\ObjectStorage<\MichielRoos\H5p\Domain\Model\ContentDependency>
+     * @var ObjectStorage<ContentDependency>
      */
     protected $libraryTranslations;
 
@@ -156,12 +162,12 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
 //    protected $libraryUpgradeService;
 
     /**
-     * @var \MichielRoos\H5p\Domain\Repository\LibraryDependencyRepository
+     * @var LibraryDependencyRepository
      */
     protected $libraryDependencyRepository;
 
     /**
-     * @param \MichielRoos\H5p\Domain\Repository\LibraryDependencyRepository $libraryDependencyRepository
+     * @param LibraryDependencyRepository $libraryDependencyRepository
      */
     public function injectLibraryDepencencyRepository(LibraryDependencyRepository $libraryDependencyRepository)
     {
@@ -180,7 +186,7 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
      *
      * @param array $libraryData
      * @return Library
-     * @throws \Exception
+     * @throws Exception
      */
     public static function createFromLibraryData(array &$libraryData)
     {
@@ -212,8 +218,8 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
 
         $library = new Library();
         $library->updateFromLibraryData($libraryData);
-        $library->setCreatedAt(new \DateTime());
-        $library->setUpdatedAt(new \DateTime());
+        $library->setCreatedAt(new DateTime());
+        $library->setUpdatedAt(new DateTime());
         $library->setRestricted(false);
         $library->setTutorialUrl('');
         return $library;
@@ -243,11 +249,11 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
 
     /**
      * @param array $libraryData
-     * @throws \Exception
+     * @throws Exception
      */
     public function updateFromLibraryData(array $libraryData)
     {
-        $this->setUpdatedAt(new \DateTime());
+        $this->setUpdatedAt(new DateTime());
         $this->setTitle($libraryData['machineName']);
         $this->setTitle($libraryData['title']);
         $this->setMachineName($libraryData['machineName']);
@@ -287,7 +293,7 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @return \TYPO3\CMS\Extbase\Persistence\ObjectStorage
+     * @return ObjectStorage
      */
     public function getContents()
     {
@@ -295,15 +301,15 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @param \TYPO3\CMS\Extbase\Persistence\ObjectStorage $contents
+     * @param ObjectStorage $contents
      */
-    public function setContents(\TYPO3\CMS\Extbase\Persistence\ObjectStorage $contents)
+    public function setContents(ObjectStorage $contents)
     {
         $this->contents = $contents;
     }
 
     /**
-     * @return \DateTime
+     * @return DateTime
      */
     public function getCreatedAt()
     {
@@ -311,15 +317,15 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @param \DateTime $createdAt
+     * @param DateTime $createdAt
      */
-    public function setCreatedAt(\DateTime $createdAt)
+    public function setCreatedAt(DateTime $createdAt)
     {
         $this->createdAt = $createdAt;
     }
 
     /**
-     * @return \DateTime
+     * @return DateTime
      */
     public function getUpdatedAt()
     {
@@ -327,9 +333,9 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @param \DateTime $updatedAt
+     * @param DateTime $updatedAt
      */
-    public function setUpdatedAt(\DateTime $updatedAt)
+    public function setUpdatedAt(DateTime $updatedAt)
     {
         $this->updatedAt = $updatedAt;
     }
@@ -390,7 +396,7 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
      */
     public function getFolderName()
     {
-        return \H5PCore::libraryToString($this->toAssocArray(), true);
+        return H5PCore::libraryToString($this->toAssocArray(), true);
     }
 
     /**
@@ -652,7 +658,7 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @return \TYPO3\CMS\Extbase\Persistence\ObjectStorage
+     * @return ObjectStorage
      */
     public function getLibraryDependencies()
     {
@@ -660,9 +666,9 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @param \TYPO3\CMS\Extbase\Persistence\ObjectStorage $libraryDependencies
+     * @param ObjectStorage $libraryDependencies
      */
-    public function setLibraryDependencies(\TYPO3\CMS\Extbase\Persistence\ObjectStorage $libraryDependencies)
+    public function setLibraryDependencies(ObjectStorage $libraryDependencies)
     {
         $this->libraryDependencies = $libraryDependencies;
     }
@@ -675,13 +681,13 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
      */
     public function getString()
     {
-        return \H5PCore::libraryToString($this->toAssocArray(), false);
+        return H5PCore::libraryToString($this->toAssocArray(), false);
     }
 
     /**
      * Returns this library as a stdClass object in a format that H5P expects
      * when it calls the method:
-     * @return \stdClass
+     * @return stdClass
      * @see \H5peditorStorage::getLibraries()
      */
     public function toStdClass()
@@ -713,7 +719,7 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @return \TYPO3\CMS\Extbase\Persistence\ObjectStorage
+     * @return ObjectStorage
      */
     public function getLibraryTranslations()
     {
@@ -721,15 +727,15 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @param \TYPO3\CMS\Extbase\Persistence\ObjectStorage $libraryTranslations
+     * @param ObjectStorage $libraryTranslations
      */
-    public function setLibraryTranslations(\TYPO3\CMS\Extbase\Persistence\ObjectStorage $libraryTranslations)
+    public function setLibraryTranslations(ObjectStorage $libraryTranslations)
     {
         $this->libraryTranslations = $libraryTranslations;
     }
 
     /**
-     * @return \TYPO3\CMS\Extbase\Persistence\ObjectStorage
+     * @return ObjectStorage
      */
     public function getCachedAssets()
     {
@@ -737,9 +743,9 @@ class Library extends \TYPO3\CMS\Extbase\DomainObject\AbstractEntity
     }
 
     /**
-     * @param \TYPO3\CMS\Extbase\Persistence\ObjectStorage $cachedAssets
+     * @param ObjectStorage $cachedAssets
      */
-    public function setCachedAssets(\TYPO3\CMS\Extbase\Persistence\ObjectStorage $cachedAssets)
+    public function setCachedAssets(ObjectStorage $cachedAssets)
     {
         $this->cachedAssets = $cachedAssets;
     }
