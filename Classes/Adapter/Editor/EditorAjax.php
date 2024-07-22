@@ -2,6 +2,7 @@
 
 namespace MichielRoos\H5p\Adapter\Editor;
 
+use H5PEditorAjaxInterface;
 use MichielRoos\H5p\Domain\Model\Library;
 use MichielRoos\H5p\Domain\Repository\ContentTypeCacheEntryRepository;
 use MichielRoos\H5p\Domain\Repository\LibraryRepository;
@@ -9,7 +10,7 @@ use MichielRoos\H5p\Domain\Repository\LibraryTranslationRepository;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Persistence\QueryInterface;
 
-class EditorAjax implements \H5PEditorAjaxInterface
+class EditorAjax implements H5PEditorAjaxInterface
 {
     /**
      * @var LibraryRepository

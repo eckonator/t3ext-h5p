@@ -6,6 +6,7 @@ use H5P_Plugin;
 use H5PContentValidator;
 use H5PCore;
 use H5peditor;
+use InvalidArgumentException;
 use MichielRoos\H5p\Adapter\Core\CoreFactory;
 use MichielRoos\H5p\Adapter\Core\FileStorage;
 use MichielRoos\H5p\Adapter\Core\Framework;
@@ -37,12 +38,14 @@ use TYPO3\CMS\Core\Pagination\SimplePagination;
 use TYPO3\CMS\Core\Resource\Exception\InvalidFileException;
 use TYPO3\CMS\Core\Resource\FileInterface;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
+use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\PathUtility;
 use TYPO3\CMS\Extbase\Http\ForwardResponse;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Extbase\Mvc\Exception\NoSuchArgumentException;
+use TYPO3\CMS\Extbase\Object\Exception;
 use TYPO3\CMS\Extbase\Pagination\QueryResultPaginator;
 use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
 use TYPO3\CMS\Extbase\Property\PropertyMappingConfiguration;
@@ -199,7 +202,7 @@ class H5pModuleController extends ActionController
      * @todo v12: Change signature to TYPO3Fluid\Fluid\View\ViewInterface when extbase ViewInterface is dropped.
      *
      */
-    public function initializeView(\TYPO3Fluid\Fluid\View\ViewInterface $view): void
+    public function initializeView(ViewInterface $view): void
     {
         $view->assignMultiple([
             'dateFormat' => $GLOBALS['TYPO3_CONF_VARS']['SYS']['ddmmyy'],
@@ -215,7 +218,7 @@ class H5pModuleController extends ActionController
      * Registers the Icons into the docheader
      *
      * @return void
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     protected function registerDocheaderButtons(): void
     {
@@ -381,7 +384,7 @@ class H5pModuleController extends ActionController
      *
      * @param int $currentPage
      * @return ResponseInterface
-     * @throws \TYPO3\CMS\Extbase\Object\Exception
+     * @throws Exception
      */
     public function librariesAction(int $currentPage = 1): ResponseInterface
     {
@@ -515,7 +518,7 @@ class H5pModuleController extends ActionController
         }
 
         if (strlen($trimmed_title) > 255) {
-            $this->addFlashMessage('Title is too long. Must be 256 letters or shorter.', '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
+            $this->addFlashMessage('Title is too long. Must be 256 letters or shorter.', '', ContextualFeedbackSeverity::ERROR);
             return new ForwardResponse('new');
         }
 
@@ -528,7 +531,7 @@ class H5pModuleController extends ActionController
             }
             $content['id'] = $this->h5pCore->saveContent($content);
         } catch (\Exception $e) {
-            $this->addFlashMessage($e->getMessage(), $e->getCode(), \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
+            $this->addFlashMessage($e->getMessage(), $e->getCode(), ContextualFeedbackSeverity::ERROR);
             return new ForwardResponse('new');
         }
 
@@ -631,7 +634,7 @@ class H5pModuleController extends ActionController
         }
 
         if (strlen($trimmed_title) > 255) {
-            $this->addFlashMessage('Title is too long. Must be 256 letters or shorter.', '', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
+            $this->addFlashMessage('Title is too long. Must be 256 letters or shorter.', '', ContextualFeedbackSeverity::ERROR);
             return new ForwardResponse('new');
         }
 
@@ -642,7 +645,7 @@ class H5pModuleController extends ActionController
             $content['id'] = $contentId;
             $content['id'] = $this->h5pCore->saveContent($content, $contentId);
         } catch (\Exception $e) {
-            $this->addFlashMessage($e->getMessage(), $e->getCode(), \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
+            $this->addFlashMessage($e->getMessage(), $e->getCode(), ContextualFeedbackSeverity::ERROR);
             return new ForwardResponse('new');
         }
 
@@ -676,7 +679,7 @@ class H5pModuleController extends ActionController
             $content           = $contentRepository->findByUid($contentId);
 
             if (!$content instanceof Content) {
-                $this->addFlashMessage(sprintf('Content element with id %d not found', $contentId), 'Record not found', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
+                $this->addFlashMessage(sprintf('Content element with id %d not found', $contentId), 'Record not found', ContextualFeedbackSeverity::ERROR);
                 return $this->redirect('error', 'H5pModule', 'h5p');
             }
 
@@ -770,7 +773,7 @@ class H5pModuleController extends ActionController
      * Get generic h5p settings
      *
      * @return array;
-     * @throws RouteNotFoundException|\TYPO3\CMS\Extbase\Object\Exception
+     * @throws RouteNotFoundException|Exception
      */
     public function getCoreSettings(): array
     {
@@ -972,7 +975,7 @@ class H5pModuleController extends ActionController
      * @throws NoSuchArgumentException
      * @throws RouteNotFoundException
      * @throws StopActionException
-     * @throws \TYPO3\CMS\Extbase\Object\Exception
+     * @throws Exception
      */
     public function newAction(int $contentId = 0): ResponseInterface
     {
@@ -989,7 +992,7 @@ class H5pModuleController extends ActionController
             $content           = $contentRepository->findByUid($contentId);
 
             if (!$content instanceof Content) {
-                $this->addFlashMessage(sprintf('Content element with id %d not found', $contentId), 'Record not found', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
+                $this->addFlashMessage(sprintf('Content element with id %d not found', $contentId), 'Record not found', ContextualFeedbackSeverity::ERROR);
                 return $this->redirect('error');
             }
             // load JS and CSS requirements
@@ -1008,7 +1011,7 @@ class H5pModuleController extends ActionController
      * Show action
      * @param int $contentId
      * @return ResponseInterface
-     * @throws RouteNotFoundException|\TYPO3\CMS\Core\Resource\Exception\InvalidFileException
+     * @throws RouteNotFoundException|InvalidFileException
      */
     public function showAction(int $contentId): ResponseInterface
     {
@@ -1016,21 +1019,21 @@ class H5pModuleController extends ActionController
         $content           = $contentRepository->findByUid($contentId);
 
         if (!$content instanceof Content) {
-            $this->addFlashMessage(sprintf('Content element with id %d not found', $contentId), 'Record not found', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
+            $this->addFlashMessage(sprintf('Content element with id %d not found', $contentId), 'Record not found', ContextualFeedbackSeverity::ERROR);
             return new ForwardResponse('error');
         }
 
         if (!$content->getLibrary()) {
-            $this->addFlashMessage('Content element has no H5P library', 'H5P library not found on content', \TYPO3\CMS\Core\Type\ContextualFeedbackSeverity::ERROR);
+            $this->addFlashMessage('Content element has no H5P library', 'H5P library not found on content', ContextualFeedbackSeverity::ERROR);
             return new ForwardResponse('error');
         }
 
         $relativeCorePath = PathUtility::getPublicResourceWebPath('EXT:h5p/Resources/Public/Lib/h5p-core/');
 
-        foreach (\H5PCore::$scripts as $script) {
+        foreach (H5PCore::$scripts as $script) {
             $this->pageRenderer->addJsFile($relativeCorePath . $script, 'text/javascript', false, false, '', true);
         }
-        foreach (\H5PCore::$styles as $style) {
+        foreach (H5PCore::$styles as $style) {
             $this->pageRenderer->addCssFile($relativeCorePath . $style, 'stylesheet', 'all', '', false, false, '', true);
         }
 

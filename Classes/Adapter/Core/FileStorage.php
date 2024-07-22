@@ -1,6 +1,12 @@
 <?php
 namespace MichielRoos\H5p\Adapter\Core;
 
+use H5PCore;
+use H5peditorFile;
+use H5PFileStorage;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use SplFileInfo;
 use TYPO3\CMS\Core\Resource\Exception\ExistingTargetFolderException;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderAccessPermissionsException;
 use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderWritePermissionsException;
@@ -27,7 +33,7 @@ use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
 /**
  * Class FileStorage
  */
-class FileStorage implements \H5PFileStorage, SingletonInterface
+class FileStorage implements H5PFileStorage, SingletonInterface
 {
     /**
      * @var string
@@ -128,7 +134,7 @@ class FileStorage implements \H5PFileStorage, SingletonInterface
      */
     public function saveLibrary($library): void
     {
-        $name = \H5PCore::libraryToString($library, true);
+        $name = H5PCore::libraryToString($library, true);
         $rootLevelFolder = $this->getRootLevelFolder();
         $destination = 'libraries/' . $name . '/';
         if ($this->folderPrefix) {
@@ -147,8 +153,8 @@ class FileStorage implements \H5PFileStorage, SingletonInterface
         $libraryFolder = $this->storage->createFolder($destination, $rootLevelFolder);
 
         $source = str_replace("\\", '/', $library['uploadDirectory']);
-        /** @var \SplFileInfo $fileInfo */
-        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST) as $fileInfo) {
+        /** @var SplFileInfo $fileInfo */
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST) as $fileInfo) {
             $pathName = $fileInfo->getPathname();
             $pathName = str_replace("\\", '/', $pathName);
             $dir = str_replace($source, '', $pathName);
@@ -199,8 +205,8 @@ class FileStorage implements \H5PFileStorage, SingletonInterface
         }
         $contentFolder = $this->storage->createFolder($destination, $rootLevelFolder);
 
-        /** @var \SplFileInfo $fileInfo */
-        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST) as $fileInfo) {
+        /** @var SplFileInfo $fileInfo */
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST) as $fileInfo) {
             $pathName = $fileInfo->getPathname();
             $pathName = str_replace("\\", '/', $pathName);
             $dir = str_replace($source, '', $pathName);
@@ -472,12 +478,12 @@ class FileStorage implements \H5PFileStorage, SingletonInterface
      * Save files uploaded through the editor.
      * The files must be marked as temporary until the content form is saved.
      *
-     * @param \H5peditorFile $file
+     * @param H5peditorFile $file
      * @param int $contentId
-     * @return \H5peditorFile
+     * @return H5peditorFile
      * @throws Exception
      */
-    public function saveFile($file, $contentId): \H5peditorFile
+    public function saveFile($file, $contentId): H5peditorFile
     {
         $rootLevelFolder = $this->getRootLevelFolder();
         $prefix = '';
@@ -629,8 +635,8 @@ class FileStorage implements \H5PFileStorage, SingletonInterface
             }
         }
 
-        /** @var \SplFileInfo $fileInfo */
-        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST) as $fileInfo) {
+        /** @var SplFileInfo $fileInfo */
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST) as $fileInfo) {
             $pathName = $fileInfo->getPathname();
             $dir = str_replace($source, '', $pathName);
             $dir = ltrim($dir, '/');

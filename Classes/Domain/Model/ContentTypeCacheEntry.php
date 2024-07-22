@@ -2,6 +2,8 @@
 namespace MichielRoos\H5p\Domain\Model;
 
 
+use DateTime;
+use stdClass;
 use TYPO3\CMS\Extbase\DomainObject\AbstractEntity;
 
 /**
@@ -69,12 +71,12 @@ class ContentTypeCacheEntry extends AbstractEntity
     protected $icon;
 
     /**
-     * @var \DateTime
+     * @var DateTime
      */
     protected $createdAt;
 
     /**
-     * @var \DateTime
+     * @var DateTime
      */
     protected $updatedAt;
 
@@ -123,7 +125,7 @@ class ContentTypeCacheEntry extends AbstractEntity
      */
     protected $owner;
 
-    public static function create(\stdClass $contentTypeCacheObject)
+    public static function create(stdClass $contentTypeCacheObject)
     {
         $entry = new ContentTypeCacheEntry();
         $entry->setMachineName($contentTypeCacheObject->id);
@@ -136,8 +138,8 @@ class ContentTypeCacheEntry extends AbstractEntity
         $entry->setSummary($contentTypeCacheObject->summary);
         $entry->setDescription($contentTypeCacheObject->description);
         $entry->setIcon($contentTypeCacheObject->icon);
-        $entry->setCreatedAt(new \DateTime($contentTypeCacheObject->createdAt));
-        $entry->setUpdatedAt(new \DateTime($contentTypeCacheObject->updatedAt));
+        $entry->setCreatedAt(new DateTime($contentTypeCacheObject->createdAt));
+        $entry->setUpdatedAt(new DateTime($contentTypeCacheObject->updatedAt));
         $entry->setIsRecommended($contentTypeCacheObject->isRecommended);
         $entry->setPopularity($contentTypeCacheObject->popularity);
         $entry->setScreenshots(json_encode($contentTypeCacheObject->screenshots));
@@ -152,7 +154,7 @@ class ContentTypeCacheEntry extends AbstractEntity
 
     /**
      * Returns the library cache entry in a format that H5P expects.
-     * @return \stdClass
+     * @return stdClass
      */
     public function toStdClass()
     {
@@ -339,7 +341,7 @@ class ContentTypeCacheEntry extends AbstractEntity
     }
 
     /**
-     * @return \DateTime
+     * @return DateTime
      */
     public function getCreatedAt()
     {
@@ -347,15 +349,15 @@ class ContentTypeCacheEntry extends AbstractEntity
     }
 
     /**
-     * @param \DateTime $createdAt
+     * @param DateTime $createdAt
      */
-    public function setCreatedAt(\DateTime $createdAt): void
+    public function setCreatedAt(DateTime $createdAt): void
     {
         $this->createdAt = $createdAt;
     }
 
     /**
-     * @return \DateTime
+     * @return DateTime
      */
     public function getUpdatedAt()
     {
@@ -363,9 +365,9 @@ class ContentTypeCacheEntry extends AbstractEntity
     }
 
     /**
-     * @param \DateTime $updatedAt
+     * @param DateTime $updatedAt
      */
-    public function setUpdatedAt(\DateTime $updatedAt): void
+    public function setUpdatedAt(DateTime $updatedAt): void
     {
         $this->updatedAt = $updatedAt;
     }

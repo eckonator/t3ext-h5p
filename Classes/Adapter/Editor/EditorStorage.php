@@ -2,7 +2,9 @@
 
 namespace MichielRoos\H5p\Adapter\Editor;
 
+use H5PCore;
 use H5peditorFile;
+use H5peditorStorage;
 use MichielRoos\H5p\Adapter\Core\FrameworkFactory;
 use MichielRoos\H5p\Domain\Model\Library;
 use MichielRoos\H5p\Domain\Model\LibraryTranslation;
@@ -12,7 +14,7 @@ use MichielRoos\H5p\Utility\MaintenanceUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Persistence\QueryInterface;
 
-class EditorStorage implements \H5peditorStorage
+class EditorStorage implements H5peditorStorage
 {
     /**
      * @var LibraryRepository
@@ -236,7 +238,7 @@ class EditorStorage implements \H5peditorStorage
     public static function removeTemporarilySavedFiles($filePath): void
     {
         if (is_dir($filePath)) {
-            \H5PCore::deleteFileTree($filePath);
+            H5PCore::deleteFileTree($filePath);
         } elseif (is_file($filePath)) {
             unlink($filePath);
         }

@@ -21,7 +21,7 @@ class UploadViewHelper extends AbstractFormFieldViewHelper
      * @var PropertyMapper
      */
     protected $propertyMapper;
-    public function __construct(\TYPO3\CMS\Extbase\Security\Cryptography\HashService $hashService, \TYPO3\CMS\Extbase\Property\PropertyMapper $propertyMapper)
+    public function __construct(HashService $hashService, PropertyMapper $propertyMapper)
     {
         $this->hashService = $hashService;
         $this->propertyMapper = $propertyMapper;

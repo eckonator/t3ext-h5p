@@ -4,6 +4,8 @@ namespace MichielRoos\H5p\Adapter\Core;
 
 use Doctrine\DBAL\DBALException;
 use GuzzleHttp\Exception\GuzzleException;
+use H5PCore;
+use H5PFrameworkInterface;
 use MichielRoos\H5p\Domain\Model\CachedAsset;
 use MichielRoos\H5p\Domain\Model\ConfigSetting;
 use MichielRoos\H5p\Domain\Model\Content;
@@ -23,6 +25,7 @@ use MichielRoos\H5p\Domain\Repository\LibraryRepository;
 use MichielRoos\H5p\Domain\Repository\LibraryTranslationRepository;
 use MichielRoos\H5p\Exception\MethodNotImplementedException;
 use MichielRoos\H5p\Utility\MaintenanceUtility;
+use PDO;
 use stdClass;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
@@ -47,7 +50,7 @@ use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 /**
  * Class Framework
  */
-class Framework implements \H5PFrameworkInterface, SingletonInterface
+class Framework implements H5PFrameworkInterface, SingletonInterface
 {
     /**
      * @var string
@@ -60,7 +63,7 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
     protected $contentTypeCacheEntryRepository;
 
     /**
-     * @var \H5PCore
+     * @var H5PCore
      */
     protected $h5pCore;
 
@@ -363,7 +366,7 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
     }
 
     /**
-     * @return \H5PCore|CoreFactory|object
+     * @return H5PCore|CoreFactory|object
      */
     protected function getInjectedH5PCore()
     {
@@ -532,15 +535,15 @@ class Framework implements \H5PFrameworkInterface, SingletonInterface
         $where   = [];
         $where[] = $queryBuilder->expr()->eq(
             'machine_name',
-            $queryBuilder->createNamedParameter((string)$library['machineName'], \PDO::PARAM_STR)
+            $queryBuilder->createNamedParameter((string)$library['machineName'], PDO::PARAM_STR)
         );
         $where[] = $queryBuilder->expr()->eq(
             'major_version',
-            $queryBuilder->createNamedParameter((string)$library['majorVersion'], \PDO::PARAM_STR)
+            $queryBuilder->createNamedParameter((string)$library['majorVersion'], PDO::PARAM_STR)
         );
         $where[] = $queryBuilder->expr()->eq(
             'minor_version',
-            $queryBuilder->createNamedParameter((string)$library['minorVersion'], \PDO::PARAM_STR)
+            $queryBuilder->createNamedParameter((string)$library['minorVersion'], PDO::PARAM_STR)
         );
 
         $libraryRow = $queryBuilder->select('patch_version')
