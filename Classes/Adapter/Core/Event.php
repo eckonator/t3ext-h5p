@@ -1,18 +1,6 @@
 <?php
 namespace MichielRoos\H5p\Adapter\Core;
 
-/*
- * This file is part of the TYPO3 CMS project.
- *
- * It is free software; you can redistribute it and/or modify it under
- * the terms of the GNU General Public License, either version 2
- * of the License, or any later version.
- *
- * For the full copyright and license information, please read the
- * LICENSE.txt file that was distributed with this source code.
- *
- * The TYPO3 project - inspiring people to share!
- */
 
 use H5PEventBase;
 use TYPO3\CMS\Core\SingletonInterface;
@@ -22,6 +10,49 @@ use TYPO3\CMS\Core\SingletonInterface;
  */
 class Event extends H5PEventBase implements SingletonInterface
 {
+
+    /**
+     * Adds event type, h5p library and timestamp to event before saving it.
+     *
+     * Common event types with sub type:
+     *  content, <none> – content view
+     *           embed – viewed through embed code
+     *           shortcode – viewed through internal shortcode
+     *           edit – opened in editor
+     *           delete – deleted
+     *           create – created through editor
+     *           create upload – created through upload
+     *           update – updated through editor
+     *           update upload – updated through upload
+     *           upgrade – upgraded
+     *
+     *  results, <none> – view own results
+     *           content – view results for content
+     *           set – new results inserted or updated
+     *
+     *  settings, <none> – settings page loaded
+     *
+     *  library, <none> – loaded in editor
+     *           create – new library installed
+     *           update – old library updated
+     *
+     * @param string $type
+     *  Name of event type
+     * @param string $sub_type
+     *  Name of event sub type
+     * @param string $content_id
+     *  Identifier for content affected by the event
+     * @param string $content_title
+     *  Content title (makes it easier to know which content was deleted etc.)
+     * @param string $library_name
+     *  Name of the library affected by the event
+     * @param string $library_version
+     *  Library version
+     */
+    function __construct(string $type = '', $sub_type = NULL, $content_id = NULL, $content_title = NULL, $library_name = NULL, $library_version = NULL) {
+        parent::__construct($type = '', $sub_type = NULL, $content_id = NULL, $content_title = NULL, $library_name = NULL, $library_version = NULL);
+    }
+
     /**
      * Stores the event data in the database.
      *

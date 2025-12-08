@@ -9,7 +9,6 @@ return [
         'label_userFunc' => TCA::class . '->getContentResultTitle',
         'tstamp'         => 'tstamp',
         'crdate'         => 'crdate',
-        'dividers2tabs'  => true,
         'enablecolumns'  => [
             'disabled' => 'hidden',
         ],

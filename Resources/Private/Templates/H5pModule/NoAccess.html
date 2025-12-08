@@ -1,8 +1,15 @@
-<f:layout name="Default" />
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      xmlns:be="http://typo3.org/ns/TYPO3/CMS/Backend/ViewHelpers"
+      data-namespace-typo3-fluid="true">
 
-<f:section name="iconButtons">
+<f:be.pageRenderer includeCssFiles="{0: '{f:uri.resource(path:\'Css/Styles.css\')}'}" />
+
+<f:layout name="Module" />
+
+<f:section name="Content">
+	--No Access--
 </f:section>
 
-<f:section name="content">
-	--No Access--
+<f:section name="iconButtons">
 </f:section>

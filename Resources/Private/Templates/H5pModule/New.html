@@ -1,13 +1,18 @@
-<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
-<f:layout name="Backend/Default"/>
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      xmlns:be="http://typo3.org/ns/TYPO3/CMS/Backend/ViewHelpers"
+      data-namespace-typo3-fluid="true">
 
-<f:section name="content">
+<f:be.pageRenderer includeCssFiles="{0: '{f:uri.resource(path:\'Css/Styles.css\')}'}" />
+
+<f:layout name="Module" />
+
+<f:section name="Content">
     <f:if condition="{didConsent}">
         <f:then>
             <f:if condition="{h5pContentAllowedOnPage}">
                 <f:then>
                     <h1><f:translate key="module.menu.new">New</f:translate></h1>
-                    <f:flashMessages/>
 
                     <f:form method="post" enctype="multipart/form-data" id="h5p-content-form" action="create" controller="H5pModule">
                         <div id="post-body-content">
@@ -31,11 +36,11 @@
                             <div id="minor-publishing" style="display:none">
                                 <label><input type="radio" name="action" value="upload"/>Upload</label>
                                 <label><input type="radio" name="action" value="create"/>Create</label>
-                                <f:form.hidden name="library" value="{library}"/>
-                                <f:form.hidden name="parameters" value="{parameters}"/>
+                                <f:form.hidden name="library" id="tx_h5p_web_h5pmanager_library" value="{library}"/>
+                                <f:form.hidden name="parameters" id="tx_h5p_web_h5pmanager_parameters" value="{parameters}"/>
                             </div>
                             <div id="major-publishing-actions" class="submitbox">
-                                <input type="submit" name="submit-button" value="Create" class="button button-primary button-large"/>
+                                <input type="submit" name="submit-button" value="Create" class="btn btn-default"/>
                             </div>
                         </div>
                         <div class="postbox h5p-sidebar">
@@ -72,7 +77,7 @@
                 <div><label>
                     <f:form.checkbox name="collectStatistics" value="true"/>
                     Store frontend user progress and statistics in TYPO3</label></div>
-                <div><input type="submit" name="submit-button" value="I consent, give me the Hub!" class="button button-primary button-large"/></div>
+                <div><input type="submit" name="submit-button" value="I consent, give me the Hub!" class="btn btn-default"/></div>
             </f:form>
         </f:else>
     </f:if>

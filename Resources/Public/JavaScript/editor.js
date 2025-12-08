@@ -1,4 +1,3 @@
-define('TYPO3/CMS/H5p/editor', [], function () {
     var ns = H5PEditor;
 
     (function ($) {
@@ -30,8 +29,8 @@ define('TYPO3/CMS/H5p/editor', [], function () {
             var $upload = $('.h5p-upload');
             var $create = $('.h5p-create').hide();
             var $editor = $('.h5p-editor');
-            var $library = $('input[name="tx_h5p_web_h5pmanager[library]"]');
-            var $params = $('input[name="tx_h5p_web_h5pmanager[parameters]"]');
+            var $library = $('input#tx_h5p_web_h5pmanager_library');
+            var $params = $('input#tx_h5p_web_h5pmanager_parameters');
             var library = $library.val();
 
             $type.change(function () {
@@ -116,5 +115,3 @@ define('TYPO3/CMS/H5p/editor', [], function () {
 
         $(document).ready(H5PEditor.init);
     })(H5P.jQuery);
-
-});

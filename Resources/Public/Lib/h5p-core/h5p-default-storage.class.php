@@ -15,8 +15,7 @@
  * @copyright  2016 Joubel AS
  * @license    MIT
  */
-class H5PDefaultStorage implements H5PFileStorage
-{
+class H5PDefaultStorage implements \H5PFileStorage {
   private $path, $alteditorpath;
 
   /**
@@ -40,13 +39,17 @@ class H5PDefaultStorage implements H5PFileStorage
    *  Library properties
    */
   public function saveLibrary($library) {
-    $dest = $this->path . '/libraries/' . H5PCore::libraryToString($library, TRUE);
+    $dest = $this->path . '/libraries/' . \H5PCore::libraryToFolderName($library);
 
     // Make sure destination dir doesn't exist
-    H5PCore::deleteFileTree($dest);
+    \H5PCore::deleteFileTree($dest);
 
     // Move library folder
     self::copyFileTree($library['uploadDirectory'], $dest);
+  }
+
+  public function deleteLibrary($library) {
+    // TODO
   }
 
   /**
@@ -61,7 +64,7 @@ class H5PDefaultStorage implements H5PFileStorage
     $dest = "{$this->path}/content/{$content['id']}";
 
     // Remove any old content
-    H5PCore::deleteFileTree($dest);
+    \H5PCore::deleteFileTree($dest);
 
     self::copyFileTree($source, $dest);
   }
@@ -73,7 +76,7 @@ class H5PDefaultStorage implements H5PFileStorage
    *  Content properties
    */
   public function deleteContent($content) {
-    H5PCore::deleteFileTree("{$this->path}/content/{$content['id']}");
+    \H5PCore::deleteFileTree("{$this->path}/content/{$content['id']}");
   }
 
   /**
@@ -134,9 +137,14 @@ class H5PDefaultStorage implements H5PFileStorage
    *  Folder that library resides in
    */
   public function exportLibrary($library, $target, $developmentPath=NULL) {
-    $folder = H5PCore::libraryToString($library, TRUE);
-    $srcPath = ($developmentPath === NULL ? "/libraries/{$folder}" : $developmentPath);
-    self::copyFileTree("{$this->path}{$srcPath}", "{$target}/{$folder}");
+    $srcFolder = \H5PCore::libraryToFolderName($library);
+    $srcPath = ($developmentPath === NULL ? "/libraries/{$srcFolder}" : $developmentPath);
+
+    // Library folders inside the H5P zip file shall not contain patch version in the folder name
+    $library['patchVersionInFolderName'] = false;
+    $destinationFolder = \H5PCore::libraryToFolderName($library);
+
+    self::copyFileTree("{$this->path}{$srcPath}", "{$target}/{$destinationFolder}");
   }
 
   /**
@@ -293,7 +301,7 @@ class H5PDefaultStorage implements H5PFileStorage
    * Save files uploaded through the editor.
    * The files must be marked as temporary until the content form is saved.
    *
-   * @param H5peditorFile $file
+   * @param \H5peditorFile $file
    * @param int $contentid
    */
   public function saveFile($file, $contentId) {
@@ -358,15 +366,14 @@ class H5PDefaultStorage implements H5PFileStorage
    * content from the current temporary upload folder to the editor path.
    *
    * @param string $source path to source directory
-   * @param string $contentId Id of content
-   *
-   * @return object Object containing h5p json and content json data
+   * @param string $contentId Id of contentarray
    */
   public function moveContentDirectory($source, $contentId = NULL) {
     if ($source === NULL) {
       return NULL;
     }
 
+    // TODO: Remove $contentId and never copy temporary files into content folder. JI-366
     if ($contentId === NULL || $contentId == 0) {
       $target = $this->getEditorPath();
     }
@@ -375,7 +382,7 @@ class H5PDefaultStorage implements H5PFileStorage
       $target = "{$this->path}/content/{$contentId}";
     }
 
-    $contentSource = $source . DIRECTORY_SEPARATOR . 'content';
+    $contentSource = $source . '/' . 'content';
     $contentFiles = array_diff(scandir($contentSource), array('.','..', 'content.json'));
     foreach ($contentFiles as $file) {
       if (is_dir("{$contentSource}/{$file}")) {
@@ -386,14 +393,7 @@ class H5PDefaultStorage implements H5PFileStorage
       }
     }
 
-    // Successfully loaded content json of file into editor
-    $h5pJson = $this->getContent($source . DIRECTORY_SEPARATOR . 'h5p.json');
-    $contentJson = $this->getContent($contentSource . DIRECTORY_SEPARATOR . 'content.json');
-
-    return (object) array(
-      'h5pJson' => $h5pJson,
-      'contentJson' => $contentJson
-    );
+    // TODO: Return list of all files so that they can be marked as temporary. JI-366
   }
 
   /**
@@ -454,8 +454,8 @@ class H5PDefaultStorage implements H5PFileStorage
    * @return bool
    */
   public function hasPresave($libraryFolder, $developmentPath = null) {
-      $path = is_null($developmentPath) ? 'libraries' . DIRECTORY_SEPARATOR . $libraryFolder : $developmentPath;
-      $filePath = realpath($this->path . DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR . 'presave.js');
+      $path = is_null($developmentPath) ? 'libraries' . '/' . $libraryFolder : $developmentPath;
+      $filePath = realpath($this->path . '/' . $path . '/' . 'presave.js');
     return file_exists($filePath);
   }
 
@@ -478,6 +478,26 @@ class H5PDefaultStorage implements H5PFileStorage
   }
 
   /**
+   * Store the given stream into the given file.
+   *
+   * @param string $path
+   * @param string $file
+   * @param resource $stream
+   * @return bool
+   */
+  public function saveFileFromZip($path, $file, $stream) {
+    $filePath = $path . '/' . $file;
+
+    // Make sure the directory exists first
+    $matches = array();
+    preg_match('/(.+)\/[^\/]*$/', $filePath, $matches);
+    self::dirReady($matches[1]);
+
+    // Store in local storage folder
+    return file_put_contents($filePath, $stream);
+  }
+
+  /**
    * Recursive function for copying directories.
    *
    * @param string $source
@@ -491,7 +511,7 @@ class H5PDefaultStorage implements H5PFileStorage
    */
   private static function copyFileTree($source, $destination) {
     if (!self::dirReady($destination)) {
-      throw new Exception('unabletocopy');
+      throw new \Exception('unabletocopy');
     }
 
     $ignoredFiles = self::getIgnoredFiles("{$source}/.h5pignore");
@@ -499,7 +519,7 @@ class H5PDefaultStorage implements H5PFileStorage
     $dir = opendir($source);
     if ($dir === FALSE) {
       trigger_error('Unable to open directory ' . $source, E_USER_WARNING);
-      throw new Exception('unabletocopy');
+      throw new \Exception('unabletocopy');
     }
 
     while (false !== ($file = readdir($dir))) {

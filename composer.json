@@ -17,10 +17,10 @@
     }
   ],
   "require": {
-    "h5p/h5p-core": "1.22.0 || dev-master || dev-directory-separator",
-    "h5p/h5p-editor": "1.22.0 || dev-master || dev-directory-separator",
-    "guzzlehttp/guzzle": "^6.3",
-    "typo3/cms-core": ">=7.6.0 < 9.5.99"
+    "h5p/h5p-core": "^1.27",
+    "h5p/h5p-editor": "^1.25",
+    "guzzlehttp/guzzle": "^7.4",
+    "typo3/cms-core": "13.4.*"
   },
   "replace": {
     "typo3-ter/h5p": "self.version"
@@ -30,8 +30,11 @@
     "optimize-autoloader": true
   },
   "extra": {
+    "typo3/cms": {
+      "extension-key": "h5p"
+    },
     "branch-alias": {
-      "dev-master": "0.0.x-dev"
+      "dev-master": "13.4-dev"
     }
   },
   "autoload": {

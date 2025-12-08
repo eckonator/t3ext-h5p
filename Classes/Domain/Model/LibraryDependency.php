@@ -1,21 +1,7 @@
 <?php
 namespace MichielRoos\H5p\Domain\Model;
 
-/*
- * This file is part of the TYPO3 CMS project.
- *
- * It is free software; you can redistribute it and/or modify it under
- * the terms of the GNU General Public License, either version 2
- * of the License, or any later version.
- *
- * For the full copyright and license information, please read the
- * LICENSE.txt file that was distributed with this source code.
- *
- * The TYPO3 project - inspiring people to share!
- */
-
 use TYPO3\CMS\Extbase\DomainObject\AbstractEntity;
-
 /**
  * Class LibraryDependency
  * @package MichielRoos\H5p\Domain\Model
@@ -25,17 +11,17 @@ class LibraryDependency extends AbstractEntity
     /**
      * @var Library
      */
-    protected $library;
+    protected Library $library;
 
     /**
      * @var Library
      */
-    protected $requiredLibrary;
+    protected Library $requiredLibrary;
 
     /**
      * @var string
      */
-    protected $dependencyType;
+    protected string $dependencyType;
 
     /**
      * LibraryDependency constructor.
@@ -53,7 +39,7 @@ class LibraryDependency extends AbstractEntity
     /**
      * @return Library
      */
-    public function getLibrary()
+    public function getLibrary(): Library
     {
         return $this->library;
     }
@@ -61,7 +47,7 @@ class LibraryDependency extends AbstractEntity
     /**
      * @param Library $library
      */
-    public function setLibrary(Library $library)
+    public function setLibrary(Library $library): void
     {
         $this->library = $library;
     }
@@ -69,7 +55,7 @@ class LibraryDependency extends AbstractEntity
     /**
      * @return Library
      */
-    public function getRequiredLibrary()
+    public function getRequiredLibrary(): Library
     {
         return $this->requiredLibrary;
     }
@@ -77,7 +63,7 @@ class LibraryDependency extends AbstractEntity
     /**
      * @param Library $requiredLibrary
      */
-    public function setRequiredLibrary(Library $requiredLibrary)
+    public function setRequiredLibrary(Library $requiredLibrary): void
     {
         $this->requiredLibrary = $requiredLibrary;
     }
@@ -85,7 +71,7 @@ class LibraryDependency extends AbstractEntity
     /**
      * @return string
      */
-    public function getDependencyType()
+    public function getDependencyType(): string
     {
         return $this->dependencyType;
     }
@@ -93,7 +79,7 @@ class LibraryDependency extends AbstractEntity
     /**
      * @param string $dependencyType
      */
-    public function setDependencyType(string $dependencyType)
+    public function setDependencyType(string $dependencyType): void
     {
         $this->dependencyType = $dependencyType;
     }

@@ -1,0 +1,13 @@
+diff --git a/h5p.classes.php b/h5p.classes.php
+index 867af13..1aca99d 100644
+--- a/h5p.classes.php
++++ b/h5p.classes.php
+@@ -2292,7 +2292,7 @@ class H5PCore {
+       $this->h5pF->deleteLibraryUsage($content['id']);
+       $this->h5pF->saveLibraryUsage($content['id'], $content['dependencies']);
+ 
+-      if (!$content['slug']) {
++      if (empty($content['slug'] ?? null)) {
+         $content['slug'] = $this->generateContentSlug($content);
+ 
+         // Remove old export file

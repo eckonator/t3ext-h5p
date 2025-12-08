@@ -67,7 +67,7 @@ class H5PDevelopment {
     $contents = scandir($path);
 
     for ($i = 0, $s = count($contents); $i < $s; $i++) {
-      if ($contents[$i]{0} === '.') {
+      if ($contents[$i][0] === '.') {
         continue; // Skip hidden stuff.
       }
 
@@ -95,7 +95,9 @@ class H5PDevelopment {
       $this->h5pF->saveLibraryData($library, $library['libraryId'] === FALSE);
 
       // Need to decode it again, since it is served from here.
-      $library['metadataSettings'] = json_decode($library['metadataSettings']);
+      $library['metadataSettings'] = isset($library['metadataSettings'])
+        ? json_decode($library['metadataSettings'])
+        : NULL;
 
       $library['path'] = 'development/' . $contents[$i];
       $this->libraries[H5PDevelopment::libraryToString($library['machineName'], $library['majorVersion'], $library['minorVersion'])] = $library;

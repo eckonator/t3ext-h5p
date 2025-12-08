@@ -1,19 +1,9 @@
 <?php
+
 namespace MichielRoos\H5p\Domain\Repository;
 
-/*
- * This file is part of the TYPO3 CMS project.
- *
- * It is free software; you can redistribute it and/or modify it under
- * the terms of the GNU General Public License, either version 2
- * of the License, or any later version.
- *
- * For the full copyright and license information, please read the
- * LICENSE.txt file that was distributed with this source code.
- *
- * The TYPO3 project - inspiring people to share!
- */
 use MichielRoos\H5p\Domain\Model\Library;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException;
 use TYPO3\CMS\Extbase\Persistence\Generic\QuerySettingsInterface;
 use TYPO3\CMS\Extbase\Persistence\QueryInterface;
@@ -37,10 +27,10 @@ class LibraryRepository extends Repository
     /**
      * initializes any required object
      */
-    public function initializeObject()
+    public function initializeObject(): void
     {
         if ($this->defaultQuerySettings === null) {
-            $this->defaultQuerySettings = $this->objectManager->get(QuerySettingsInterface::class);
+            $this->defaultQuerySettings = GeneralUtility::makeInstance(QuerySettingsInterface::class);
         }
         $this->defaultQuerySettings->setRespectStoragePage(false);
     }
@@ -49,9 +39,9 @@ class LibraryRepository extends Repository
      * @param integer $id
      * @throws IllegalObjectTypeException
      */
-    public function removeByLibraryId($id)
+    public function removeByLibraryId($id): void
     {
-        $library = $this->findOneByUid($id);
+        $library = $this->findOneBy(['uid' => $id]);
         if ($library !== null) {
             $this->remove($library);
         }
@@ -61,14 +51,19 @@ class LibraryRepository extends Repository
     {
         $query = $this->createQuery();
 
-        $query->getQueryBuilder()
-            ->where('e.name = ?0 AND e.libraryId != ?1 AND (e.majorVersion > ?2 OR (e.majorVersion = ?2 AND e.minorVersion > ?3))')
-            ->setParameters([
-                $library->getTitle(),
-                $library->getUid(),
-                $library->getMajorVersion(),
-                $library->getMinorVersion()
-            ]);
+        $query->matching(
+            $query->logicalAnd(
+                $query->equals('name', $library->getTitle()),
+                $query->logicalNot($query->equals('uid', $library->getUid())),
+                $query->logicalOr(
+                    $query->greaterThan('majorVersion', $library->getMajorVersion()),
+                    $query->logicalAnd(
+                        $query->equals('majorVersion', $library->getMajorVersion()),
+                        $query->greaterThan('minorVersion', $library->getMinorVersion())
+                    )
+                )
+            )
+        );
 
         return $query->execute();
     }
@@ -77,16 +72,18 @@ class LibraryRepository extends Repository
     {
         $query = $this->createQuery();
 
-        $query->getQueryBuilder()
-            ->where('e.name = ?0 AND e.majorVersion = ?1 AND e.minorVersion = ?2 AND e.patchVersion > ?3')
-            ->setParameters([
-                $name,
-                $majorVersion,
-                $minorVersion,
-                $patchVersion
-            ]);
+        $query->matching(
+            $query->logicalAnd(
+                $query->equals('name', $name),
+                $query->equals('majorVersion', $majorVersion),
+                $query->equals('minorVersion', $minorVersion),
+                $query->equals('patchVersion', $patchVersion)
+            )
+        );
 
-        return $query->execute();
+        $query->setLimit(1);
+
+        return $query->execute()->getFirst();
     }
 
     public function findUnused()
@@ -109,17 +106,18 @@ class LibraryRepository extends Repository
     public function findOneByMachinenameMajorVersionAndMinorVersion($libraryName, $majorVersion, $minorVersion = 0)
     {
         $query = $this->createQuery();
-        $libraries = $query->matching(
+
+        $query->matching(
             $query->logicalAnd(
                 $query->equals('machine_name', $libraryName),
                 $query->equals('major_version', $majorVersion),
                 $query->equals('minor_version', $minorVersion)
             )
-        )->execute();
-        if ($libraries->count()) {
-            return $libraries->getFirst();
-        }
-        return null;
+        );
+
+        $query->setLimit(1);
+
+        return $query->execute()->getFirst();
     }
 
     /**
@@ -131,26 +129,27 @@ class LibraryRepository extends Repository
     public function findOneByNameMajorVersionAndMinorVersion($libraryName, $majorVersion, $minorVersion = 0)
     {
         $query = $this->createQuery();
-        $libraries = $query->matching(
+
+        $query->matching(
             $query->logicalAnd(
                 $query->equals('title', $libraryName),
                 $query->equals('major_version', $majorVersion),
                 $query->equals('minor_version', $minorVersion)
             )
-        )->execute();
-        if ($libraries->count()) {
-            return $libraries->getFirst();
-        }
-        return null;
+        );
+
+        $query->setLimit(1);
+
+        return $query->execute()->getFirst();
     }
 
     /**
      * @return array
      */
-    public function getLibraryAddons()
+    public function getLibraryAddons(): array
     {
         $query = $this->createQuery();
-        $sql = <<<EOS
+        $sql   = <<<EOS
 SELECT e.uid,
        e.title         AS machineName,
        e.major_version AS majorVersion,

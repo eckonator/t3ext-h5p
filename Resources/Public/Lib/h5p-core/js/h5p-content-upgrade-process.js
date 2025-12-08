@@ -103,7 +103,7 @@ H5P.ContentUpgradeProcess = (function (Version) {
       }
 
       // No upgrades script. Move on
-      return next(null, params);
+      return next(null, params, metadata);
     }
 
     // Run upgrade hooks. Start by going through major versions
@@ -160,7 +160,7 @@ H5P.ContentUpgradeProcess = (function (Version) {
   ContentUpgradeProcess.prototype.processField = function (field, params, done) {
     var self = this;
 
-    if (params === undefined) {
+    if (params === undefined || params === null) {
       return done();
     }
 

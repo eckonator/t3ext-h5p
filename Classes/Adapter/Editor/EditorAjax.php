@@ -8,7 +8,6 @@ use MichielRoos\H5p\Domain\Repository\ContentTypeCacheEntryRepository;
 use MichielRoos\H5p\Domain\Repository\LibraryRepository;
 use MichielRoos\H5p\Domain\Repository\LibraryTranslationRepository;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Object\ObjectManager;
 use TYPO3\CMS\Extbase\Persistence\QueryInterface;
 
 class EditorAjax implements H5PEditorAjaxInterface
@@ -33,10 +32,9 @@ class EditorAjax implements H5PEditorAjaxInterface
      */
     public function __construct()
     {
-        $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
-        $this->libraryRepository = $objectManager->get(LibraryRepository::class);
-        $this->libraryTranslationRepository = $objectManager->get(LibraryTranslationRepository::class);
-        $this->contentTypeCacheEntryRepository = $objectManager->get(ContentTypeCacheEntryRepository::class);
+        $this->libraryRepository = GeneralUtility::makeInstance(LibraryRepository::class);
+        $this->libraryTranslationRepository = GeneralUtility::makeInstance(LibraryTranslationRepository::class);
+        $this->contentTypeCacheEntryRepository = GeneralUtility::makeInstance(ContentTypeCacheEntryRepository::class);
     }
 
     /**
@@ -52,7 +50,7 @@ class EditorAjax implements H5PEditorAjaxInterface
             'minorVersion' => QueryInterface::ORDER_DESCENDING
         ]);
 
-        $librariesOrderedByMajorAndMinorVersion = $this->libraryRepository->findByRunnable(1);
+        $librariesOrderedByMajorAndMinorVersion = $this->libraryRepository->findBy(['runnable' => 1]);
 
         $versionInformation = [];
         /** @var Library $library */
@@ -68,6 +66,7 @@ class EditorAjax implements H5PEditorAjaxInterface
                 'major_version' => $library->getMajorVersion(),
                 'minor_version' => $library->getMinorVersion(),
                 'patch_version' => $library->getPatchVersion(),
+                'patch_version_in_folder_name' => $library->getPatchVersion(),
                 'restricted'    => $library->isRestricted(),
                 'has_icon'      => $library->isHasIcon()
             ];
@@ -87,7 +86,7 @@ class EditorAjax implements H5PEditorAjaxInterface
     public function getContentTypeCache($machineName = NULL)
     {
         if ($machineName != null) {
-            return $this->contentTypeCacheEntryRepository->findOneByMachineName($machineName);
+            return $this->contentTypeCacheEntryRepository->findOneBy(['machineName' => $machineName]);
         }
 
         return $this->contentTypeCacheEntryRepository->getContentTypeCacheObjects();

@@ -1,25 +1,12 @@
 <?php
 namespace MichielRoos\H5p\Domain\Model;
 
-/*
- * This file is part of the TYPO3 CMS project.
- *
- * It is free software; you can redistribute it and/or modify it under
- * the terms of the GNU General Public License, either version 2
- * of the License, or any later version.
- *
- * For the full copyright and license information, please read the
- * LICENSE.txt file that was distributed with this source code.
- *
- * The TYPO3 project - inspiring people to share!
- */
-
 use DateTime;
 use Exception;
 use H5PCore;
-use MichielRoos\H5p\Domain\Repository\LibraryDependencyRepository;
 use stdClass;
 use TYPO3\CMS\Extbase\DomainObject\AbstractEntity;
+use MichielRoos\H5p\Domain\Repository\LibraryDependencyRepository;
 use TYPO3\CMS\Extbase\Persistence\ObjectStorage;
 
 /**
@@ -32,163 +19,160 @@ class Library extends AbstractEntity
      *
      * @var string
      */
-    protected $title = '';
+    protected string $title = '';
 
     /**
      * @var string
      */
-    protected $addTo;
+    protected string $addTo = '';
 
     /**
      * @var DateTime
      */
-    protected $createdAt;
+    protected DateTime $createdAt;
 
     /**
      * @var DateTime
      */
-    protected $updatedAt;
+    protected DateTime $updatedAt;
 
     /**
      * @var string
      */
-    protected $dropLibraryCss;
+    protected string $dropLibraryCss = '';
 
     /**
      * @var string
      */
-    protected $embedTypes;
+    protected string $embedTypes = '';
 
     /**
      * @var bool
      */
-    protected $fullscreen;
+    protected bool $fullscreen;
 
     /**
      * @var bool
      */
-    protected $hasIcon;
+    protected bool $hasIcon;
 
     /**
      * @var string
      */
-    protected $machineName;
+    protected string $machineName = '';
 
     /**
      * @var integer
      */
-    protected $majorVersion;
+    protected int $majorVersion;
 
     /**
      * @var integer
      */
-    protected $minorVersion;
+    protected int $minorVersion;
 
     /**
      * @var integer
      */
-    protected $patchVersion;
+    protected int $patchVersion;
 
     /**
      * @var string
      */
-    protected $preloadedCss;
+    protected string $preloadedCss = '';
 
     /**
      * @var string
      */
-    protected $preloadedJs;
+    protected string $preloadedJs = '';
 
     /**
      * @var bool
      */
-    protected $restricted;
+    protected bool $restricted;
 
     /**
      * @var bool
      */
-    protected $runnable;
+    protected bool $runnable;
 
     /**
      * @var string
      */
-    protected $semantics;
+    protected string $semantics = '';
 
     /**
      * @var string
      */
-    protected $tutorial_url;
+    protected string $tutorial_url = '';
 
     // Inversed relations (not in DB)
-
     /**
      * @var ObjectStorage<Content>
      */
-    protected $contents;
+    protected ObjectStorage $contents;
 
     /**
      * @var ObjectStorage<ContentDependency>
      */
-    protected $contentDependencies;
+    protected ObjectStorage $contentDependencies;
 
     /**
      * @var ObjectStorage<LibraryDependency>
      */
-    protected $libraryDependencies;
+    protected ObjectStorage $libraryDependencies;
 
     /**
      * @var ObjectStorage<ContentDependency>
      */
-    protected $libraryTranslations;
+    protected ObjectStorage $libraryTranslations;
 
     /**
      * @var string
      */
-    protected $metadataSettings;
+    protected string $metadataSettings = '';
 
 //    /**
-//     * @var \TYPO3\CMS\Extbase\Persistence\ObjectStorage<CachedAsset>
-//     */
-//    protected $cachedAssets;
-//
-//    /**
-//     * @var PersistentResource
-//     */
-//    protected $zippedLibraryFile;
-//
-//    /**
-//     * @var LibraryUpgradeService
-//     */
-//    protected $libraryUpgradeService;
-
+    //     * @var \TYPO3\CMS\Extbase\Persistence\ObjectStorage<CachedAsset>
+    //     */
+    //    protected $cachedAssets;
+    //
+    //    /**
+    //     * @var PersistentResource
+    //     */
+    //    protected $zippedLibraryFile;
+    //
+    //    /**
+    //     * @var LibraryUpgradeService
+    //     */
+    //    protected $libraryUpgradeService;
     /**
      * @var LibraryDependencyRepository
      */
-    protected $libraryDependencyRepository;
-
-    /**
-     * @param LibraryDependencyRepository $libraryDependencyRepository
-     */
-    public function injectLibraryDepencencyRepository(LibraryDependencyRepository $libraryDependencyRepository)
-    {
-        $this->libraryDependencyRepository = $libraryDependencyRepository;
-    }
+    protected LibraryDependencyRepository $libraryDependencyRepository;
 
     /**
      * Library constructor.
      */
-    public function __construct()
+    public function __construct(LibraryDependencyRepository $libraryDependencyRepository)
     {
+        $this->libraryDependencies = new ObjectStorage();
+        $this->contents = new ObjectStorage();
+        $this->contentDependencies = new ObjectStorage();
+        $this->libraryDependencies = new ObjectStorage();
+        $this->libraryTranslations = new ObjectStorage();
+        $this->libraryDependencyRepository = $libraryDependencyRepository;
     }
 
     /**
      * Creates a library from a metadata array.
      *
      * @param array $libraryData
+     *
      * @return Library
      * @throws Exception
      */
-    public static function createFromLibraryData(array &$libraryData)
+    public static function createFromLibraryData(array &$libraryData): Library
     {
         $libraryData['__preloadedJs'] = self::pathsToCsv($libraryData, 'preloadedJs');
         $libraryData['__preloadedCss'] = self::pathsToCsv($libraryData, 'preloadedCss');
@@ -232,10 +216,11 @@ class Library extends AbstractEntity
      *  Library data as found in library.json files
      * @param string $key
      *  Key that should be found in $libraryData
+     *
      * @return string
      *  file paths separated by ', '
      */
-    private static function pathsToCsv($library, $key)
+    private static function pathsToCsv(array $library, string $key): string
     {
         if (isset($library[$key])) {
             $paths = [];
@@ -249,9 +234,10 @@ class Library extends AbstractEntity
 
     /**
      * @param array $libraryData
+     *
      * @throws Exception
      */
-    public function updateFromLibraryData(array $libraryData)
+    public function updateFromLibraryData(array $libraryData): void
     {
         $this->setUpdatedAt(new DateTime());
         $this->setTitle($libraryData['machineName']);
@@ -261,9 +247,9 @@ class Library extends AbstractEntity
         $this->setMinorVersion($libraryData['minorVersion']);
         $this->setPatchVersion($libraryData['patchVersion']);
         $this->setRunnable($libraryData['runnable']);
-        $this->setHasIcon($libraryData['hasIcon'] ? true : false);
-        $this->setAddTo(empty($libraryData['addTo']) ? null : json_encode($libraryData['addTo']));
-        $this->setMetadataSettings($libraryData['metadataSettings']);
+        $this->setHasIcon((bool)$libraryData['hasIcon']);
+        $this->setAddTo(empty($libraryData['addTo']) ? '' : json_encode($libraryData['addTo']));
+        $this->setMetadataSettings($libraryData['metadataSettings'] ?? '');
         if (isset($libraryData['semantics'])) {
             $this->setSemantics($libraryData['semantics']);
         }
@@ -280,22 +266,42 @@ class Library extends AbstractEntity
                     $content->getEmbedType();
                 }
             }
+        } elseif (isset($libraryData['embedTypes'])) {
+            $this->setEmbedTypes(implode(', ', $libraryData['embedTypes']));
+            $contents = $this->getContents();
+            if (is_array($contents)) {
+                /** @var Content $content */
+                foreach ($contents as $content) {
+                    /** Embed types might have changed, so we trigger a redetermination */
+                    $content->getEmbedType();
+                }
+            }
         }
         if (isset($libraryData['__preloadedJs'])) {
             $this->setPreloadedJs($libraryData['__preloadedJs']);
+        } elseif (isset($libraryData['embedTypes'])) {
+            $this->setPreloadedJs(self::pathsToCsv($libraryData, 'preloadedJs'));
         }
         if (isset($libraryData['__preloadedCss'])) {
             $this->setPreloadedCss($libraryData['__preloadedCss']);
+        } elseif (isset($libraryData['preloadedCss'])) {
+            $this->setPreloadedCss(self::pathsToCsv($libraryData, 'preloadedCss'));
         }
         if (isset($libraryData['__dropLibraryCss'])) {
             $this->setDropLibraryCss($libraryData['__dropLibraryCss']);
+        } elseif (isset($libraryData['dropLibraryCss'])) {
+            $libs = [];
+            foreach ($libraryData['dropLibraryCss'] as $lib) {
+                $libs[] = $lib['machineName'];
+            }
+            $this->setDropLibraryCss(implode(', ', $libs));
         }
     }
 
     /**
      * @return ObjectStorage
      */
-    public function getContents()
+    public function getContents(): ObjectStorage
     {
         return $this->contents;
     }
@@ -303,7 +309,7 @@ class Library extends AbstractEntity
     /**
      * @param ObjectStorage $contents
      */
-    public function setContents(ObjectStorage $contents)
+    public function setContents(ObjectStorage $contents): void
     {
         $this->contents = $contents;
     }
@@ -311,7 +317,7 @@ class Library extends AbstractEntity
     /**
      * @return DateTime
      */
-    public function getCreatedAt()
+    public function getCreatedAt(): DateTime
     {
         return $this->createdAt;
     }
@@ -319,7 +325,7 @@ class Library extends AbstractEntity
     /**
      * @param DateTime $createdAt
      */
-    public function setCreatedAt(DateTime $createdAt)
+    public function setCreatedAt(DateTime $createdAt): void
     {
         $this->createdAt = $createdAt;
     }
@@ -327,7 +333,7 @@ class Library extends AbstractEntity
     /**
      * @return DateTime
      */
-    public function getUpdatedAt()
+    public function getUpdatedAt(): DateTime
     {
         return $this->updatedAt;
     }
@@ -335,7 +341,7 @@ class Library extends AbstractEntity
     /**
      * @param DateTime $updatedAt
      */
-    public function setUpdatedAt(DateTime $updatedAt)
+    public function setUpdatedAt(DateTime $updatedAt): void
     {
         $this->updatedAt = $updatedAt;
     }
@@ -343,7 +349,7 @@ class Library extends AbstractEntity
     /**
      * @return string
      */
-    public function getAddTo()
+    public function getAddTo(): string
     {
         return $this->addTo;
     }
@@ -351,7 +357,7 @@ class Library extends AbstractEntity
     /**
      * @param string $addTo
      */
-    public function setAddTo($addTo)
+    public function setAddTo(string $addTo): void
     {
         $this->addTo = $addTo;
     }
@@ -359,7 +365,7 @@ class Library extends AbstractEntity
     /**
      * @return bool
      */
-    public function isRestricted()
+    public function isRestricted(): bool
     {
         return $this->restricted;
     }
@@ -367,7 +373,7 @@ class Library extends AbstractEntity
     /**
      * @param bool $restricted
      */
-    public function setRestricted(bool $restricted)
+    public function setRestricted(bool $restricted): void
     {
         $this->restricted = $restricted;
     }
@@ -375,7 +381,7 @@ class Library extends AbstractEntity
     /**
      * @return string
      */
-    public function getTutorialUrl()
+    public function getTutorialUrl(): string
     {
         return $this->tutorial_url;
     }
@@ -383,7 +389,7 @@ class Library extends AbstractEntity
     /**
      * @param string $tutorial_url
      */
-    public function setTutorialUrl($tutorial_url)
+    public function setTutorialUrl(string $tutorial_url): void
     {
         $this->tutorial_url = $tutorial_url;
     }
@@ -394,7 +400,7 @@ class Library extends AbstractEntity
      *
      * @return string
      */
-    public function getFolderName()
+    public function getFolderName(): string
     {
         return H5PCore::libraryToString($this->toAssocArray(), true);
     }
@@ -404,7 +410,7 @@ class Library extends AbstractEntity
      * H5PFramework->loadLibrary is expected to return.
      * @see H5PFramework::loadLibrary()
      */
-    public function toAssocArray()
+    public function toAssocArray(): array
     {
         // the keys majorVersion and major_version are both used within the h5p library classes. Same goes for minor and patch.
         $libraryArray = [
@@ -431,7 +437,7 @@ class Library extends AbstractEntity
 
         $libraryDependencies = $this->getLibraryDependencies();
 
-        if ($libraryDependencies instanceof ObjectStorage && $libraryDependencies->count() > 0) {
+        if ($libraryDependencies->count() > 0) {
             /** @var LibraryDependency $dependency */
             foreach ($libraryDependencies as $dependency) {
                 $libraryArray[$dependency->getDependencyType() . 'Dependencies'][] = [
@@ -450,7 +456,7 @@ class Library extends AbstractEntity
      *
      * @return string $title
      */
-    public function getTitle()
+    public function getTitle(): string
     {
         return $this->title;
     }
@@ -460,7 +466,7 @@ class Library extends AbstractEntity
      *
      * @param string $title
      */
-    public function setTitle($title)
+    public function setTitle(string $title): void
     {
         $this->title = $title;
     }
@@ -468,7 +474,7 @@ class Library extends AbstractEntity
     /**
      * @return string
      */
-    public function getMachineName()
+    public function getMachineName(): string
     {
         return $this->machineName;
     }
@@ -476,7 +482,7 @@ class Library extends AbstractEntity
     /**
      * @param string $machineName
      */
-    public function setMachineName($machineName)
+    public function setMachineName(string $machineName): void
     {
         $this->machineName = $machineName;
     }
@@ -484,7 +490,7 @@ class Library extends AbstractEntity
     /**
      * @return int
      */
-    public function getMajorVersion()
+    public function getMajorVersion(): int
     {
         return $this->majorVersion;
     }
@@ -492,7 +498,7 @@ class Library extends AbstractEntity
     /**
      * @param int $majorVersion
      */
-    public function setMajorVersion($majorVersion)
+    public function setMajorVersion(int $majorVersion): void
     {
         $this->majorVersion = $majorVersion;
     }
@@ -500,7 +506,7 @@ class Library extends AbstractEntity
     /**
      * @return int
      */
-    public function getMinorVersion()
+    public function getMinorVersion(): int
     {
         return $this->minorVersion;
     }
@@ -508,7 +514,7 @@ class Library extends AbstractEntity
     /**
      * @param int $minorVersion
      */
-    public function setMinorVersion($minorVersion)
+    public function setMinorVersion(int $minorVersion): void
     {
         $this->minorVersion = $minorVersion;
     }
@@ -516,7 +522,7 @@ class Library extends AbstractEntity
     /**
      * @return int
      */
-    public function getPatchVersion()
+    public function getPatchVersion(): int
     {
         return $this->patchVersion;
     }
@@ -524,7 +530,7 @@ class Library extends AbstractEntity
     /**
      * @param int $patchVersion
      */
-    public function setPatchVersion($patchVersion)
+    public function setPatchVersion(int $patchVersion): void
     {
         $this->patchVersion = $patchVersion;
     }
@@ -532,7 +538,7 @@ class Library extends AbstractEntity
     /**
      * @return string
      */
-    public function getEmbedTypes()
+    public function getEmbedTypes(): string
     {
         return $this->embedTypes;
     }
@@ -540,7 +546,7 @@ class Library extends AbstractEntity
     /**
      * @param string $embedTypes
      */
-    public function setEmbedTypes($embedTypes)
+    public function setEmbedTypes(string $embedTypes): void
     {
         $this->embedTypes = $embedTypes;
     }
@@ -548,7 +554,7 @@ class Library extends AbstractEntity
     /**
      * @return string
      */
-    public function getPreloadedJs()
+    public function getPreloadedJs(): string
     {
         return $this->preloadedJs;
     }
@@ -556,7 +562,7 @@ class Library extends AbstractEntity
     /**
      * @param string $preloadedJs
      */
-    public function setPreloadedJs($preloadedJs)
+    public function setPreloadedJs(string $preloadedJs): void
     {
         $this->preloadedJs = $preloadedJs;
     }
@@ -564,7 +570,7 @@ class Library extends AbstractEntity
     /**
      * @return string
      */
-    public function getPreloadedCss()
+    public function getPreloadedCss(): string
     {
         return $this->preloadedCss;
     }
@@ -572,7 +578,7 @@ class Library extends AbstractEntity
     /**
      * @param string $preloadedCss
      */
-    public function setPreloadedCss($preloadedCss)
+    public function setPreloadedCss(string $preloadedCss): void
     {
         $this->preloadedCss = $preloadedCss;
     }
@@ -580,7 +586,7 @@ class Library extends AbstractEntity
     /**
      * @return string
      */
-    public function getDropLibraryCss()
+    public function getDropLibraryCss(): string
     {
         return $this->dropLibraryCss;
     }
@@ -588,7 +594,7 @@ class Library extends AbstractEntity
     /**
      * @param string $dropLibraryCss
      */
-    public function setDropLibraryCss($dropLibraryCss)
+    public function setDropLibraryCss(string $dropLibraryCss): void
     {
         $this->dropLibraryCss = $dropLibraryCss;
     }
@@ -596,7 +602,7 @@ class Library extends AbstractEntity
     /**
      * @return bool
      */
-    public function isFullscreen()
+    public function isFullscreen(): bool
     {
         return $this->fullscreen;
     }
@@ -604,7 +610,7 @@ class Library extends AbstractEntity
     /**
      * @param bool $fullscreen
      */
-    public function setFullscreen($fullscreen)
+    public function setFullscreen(bool $fullscreen): void
     {
         $this->fullscreen = $fullscreen;
     }
@@ -612,7 +618,7 @@ class Library extends AbstractEntity
     /**
      * @return bool
      */
-    public function isRunnable()
+    public function isRunnable(): bool
     {
         return $this->runnable;
     }
@@ -620,7 +626,7 @@ class Library extends AbstractEntity
     /**
      * @param bool $runnable
      */
-    public function setRunnable($runnable)
+    public function setRunnable(bool $runnable): void
     {
         $this->runnable = $runnable;
     }
@@ -628,7 +634,7 @@ class Library extends AbstractEntity
     /**
      * @return string
      */
-    public function getSemantics()
+    public function getSemantics(): string
     {
         return $this->semantics;
     }
@@ -636,7 +642,7 @@ class Library extends AbstractEntity
     /**
      * @param string $semantics
      */
-    public function setSemantics($semantics)
+    public function setSemantics(string $semantics): void
     {
         $this->semantics = $semantics;
     }
@@ -644,7 +650,7 @@ class Library extends AbstractEntity
     /**
      * @return bool
      */
-    public function isHasIcon()
+    public function isHasIcon(): bool
     {
         return $this->hasIcon;
     }
@@ -652,7 +658,7 @@ class Library extends AbstractEntity
     /**
      * @param bool $hasIcon
      */
-    public function setHasIcon($hasIcon)
+    public function setHasIcon(bool $hasIcon): void
     {
         $this->hasIcon = $hasIcon;
     }
@@ -660,15 +666,15 @@ class Library extends AbstractEntity
     /**
      * @return ObjectStorage
      */
-    public function getLibraryDependencies()
+    public function getLibraryDependencies(): ObjectStorage
     {
-        return $this->libraryDependencies;
+        return $this->libraryDependencies ?? new ObjectStorage();
     }
 
     /**
      * @param ObjectStorage $libraryDependencies
      */
-    public function setLibraryDependencies(ObjectStorage $libraryDependencies)
+    public function setLibraryDependencies(ObjectStorage $libraryDependencies): void
     {
         $this->libraryDependencies = $libraryDependencies;
     }
@@ -679,7 +685,7 @@ class Library extends AbstractEntity
      *
      * @return string
      */
-    public function getString()
+    public function getString(): string
     {
         return H5PCore::libraryToString($this->toAssocArray(), false);
     }
@@ -690,7 +696,7 @@ class Library extends AbstractEntity
      * @return stdClass
      * @see \H5peditorStorage::getLibraries()
      */
-    public function toStdClass()
+    public function toStdClass(): stdClass
     {
         return (object)$this->toAssocArray();
     }
@@ -698,7 +704,7 @@ class Library extends AbstractEntity
     /**
      * @return array
      */
-    public function getDependentLibrariesAsLibraryObjects()
+    public function getDependentLibrariesAsLibraryObjects(): array
     {
         return $this->libraryDependencies->map(function ($libraryDependency) {
             /** @var LibraryDependency $libraryDependency */
@@ -709,9 +715,9 @@ class Library extends AbstractEntity
     /**
      * @return array
      */
-    public function getDependentLibraries()
+    public function getDependentLibraries(): array
     {
-        $dependencies = $this->libraryDependencyRepository->findByRequiredLibrary($this)->toArray();
+        $dependencies = $this->libraryDependencyRepository->findBy(['requiredLibrary' => $this])->toArray();
         return array_map(function ($libraryDependency) {
             /** @var LibraryDependency $libraryDependency */
             return $libraryDependency->getLibrary();
@@ -721,7 +727,7 @@ class Library extends AbstractEntity
     /**
      * @return ObjectStorage
      */
-    public function getLibraryTranslations()
+    public function getLibraryTranslations(): ObjectStorage
     {
         return $this->libraryTranslations;
     }
@@ -729,7 +735,7 @@ class Library extends AbstractEntity
     /**
      * @param ObjectStorage $libraryTranslations
      */
-    public function setLibraryTranslations(ObjectStorage $libraryTranslations)
+    public function setLibraryTranslations(ObjectStorage $libraryTranslations): void
     {
         $this->libraryTranslations = $libraryTranslations;
     }
@@ -737,7 +743,7 @@ class Library extends AbstractEntity
     /**
      * @return ObjectStorage
      */
-    public function getCachedAssets()
+    public function getCachedAssets(): ObjectStorage
     {
         return $this->cachedAssets;
     }
@@ -745,7 +751,7 @@ class Library extends AbstractEntity
     /**
      * @param ObjectStorage $cachedAssets
      */
-    public function setCachedAssets(ObjectStorage $cachedAssets)
+    public function setCachedAssets(ObjectStorage $cachedAssets): void
     {
         $this->cachedAssets = $cachedAssets;
     }
@@ -753,7 +759,7 @@ class Library extends AbstractEntity
     /**
      * @param CachedAsset $cachedAsset
      */
-    public function addCachedAsset(CachedAsset $cachedAsset)
+    public function addCachedAsset(CachedAsset $cachedAsset): void
     {
         $this->cachedAssets->add($cachedAsset);
     }
@@ -777,7 +783,7 @@ class Library extends AbstractEntity
     /**
      * @return string
      */
-    public function getMetadataSettings()
+    public function getMetadataSettings(): string
     {
         return $this->metadataSettings;
     }
@@ -785,7 +791,7 @@ class Library extends AbstractEntity
     /**
      * @param string $metadataSettings
      */
-    public function setMetadataSettings($metadataSettings)
+    public function setMetadataSettings(string $metadataSettings): void
     {
         $this->metadataSettings = $metadataSettings;
     }

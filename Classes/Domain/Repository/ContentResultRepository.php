@@ -1,18 +1,8 @@
 <?php
+
 namespace MichielRoos\H5p\Domain\Repository;
 
-/*
- * This file is part of the TYPO3 CMS project.
- *
- * It is free software; you can redistribute it and/or modify it under
- * the terms of the GNU General Public License, either version 2
- * of the License, or any later version.
- *
- * For the full copyright and license information, please read the
- * LICENSE.txt file that was distributed with this source code.
- *
- * The TYPO3 project - inspiring people to share!
- */
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Persistence\Generic\QuerySettingsInterface;
 use TYPO3\CMS\Extbase\Persistence\Repository;
 
@@ -24,11 +14,9 @@ class ContentResultRepository extends Repository
     /**
      * initializes any required object
      */
-    public function initializeObject()
+    public function initializeObject(): void
     {
-        if ($this->defaultQuerySettings === null) {
-            $this->defaultQuerySettings = $this->objectManager->get(QuerySettingsInterface::class);
-        }
+        if ($this->defaultQuerySettings === null) $this->defaultQuerySettings = GeneralUtility::makeInstance(QuerySettingsInterface::class);
         $this->defaultQuerySettings->setRespectStoragePage(false);
     }
 
@@ -40,15 +28,16 @@ class ContentResultRepository extends Repository
     public function findOneByUserAndContentId(int $userId, int $contentId)
     {
         $query = $this->createQuery();
-        $results = $query->matching(
+
+        $query->matching(
             $query->logicalAnd(
                 $query->equals('user', $userId),
-                $query->equals('content', $contentId)
+                $query->equals('content', $contentId),
             )
-        )->execute();
-        if ($results->count()) {
-            return $results->getFirst();
-        }
-        return null;
+        );
+
+        $query->setLimit(1);
+
+        return $query->execute()->getFirst();
     }
 }

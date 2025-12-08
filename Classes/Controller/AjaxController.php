@@ -19,11 +19,12 @@ use MichielRoos\H5p\Domain\Model\Content;
 use MichielRoos\H5p\Domain\Model\ContentResult;
 use MichielRoos\H5p\Domain\Repository\ContentRepository;
 use MichielRoos\H5p\Domain\Repository\ContentResultRepository;
+use Psr\Http\Message\ResponseInterface;
+use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Domain\Repository\FrontendUserRepository;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
-use TYPO3\CMS\Lang\LanguageService;
 
 /**
  * Class AjaxController
@@ -45,7 +46,7 @@ class AjaxController extends ActionController
     /**
      * Finish action
      */
-    public function finishAction()
+    public function finishAction(): ResponseInterface
     {
         $user = null;
 
@@ -57,13 +58,13 @@ class AjaxController extends ActionController
         ];
 
         if ($GLOBALS['TSFE']->loginUser) {
-            $user = $GLOBALS['TSFE']->fe_user->user;
-            $postData = GeneralUtility::_POST();
+            $user = $this->request->getAttribute('frontend.user')->user;
+            $postData = $this->request->getParsedBody();
             if (!array_key_exists('time', $postData)) {
                 $postData['time'] = 0;
             }
 
-            $contentRepository = $this->objectManager->get(ContentRepository::class);
+            $contentRepository = GeneralUtility::makeInstance(ContentRepository::class);
 
             $content = $contentRepository->findByUid($postData['contentId']);
             if (!$content instanceof Content) {
@@ -72,10 +73,10 @@ class AjaxController extends ActionController
                 exit;
             }
 
-            $frontendUserRepository = $this->objectManager->get(FrontendUserRepository::class);
+            $frontendUserRepository = GeneralUtility::makeInstance(FrontendUserRepository::class);
             $frontendUser = $frontendUserRepository->findByUid((int)$user['uid']);
 
-            $contentResultRepository = $this->objectManager->get(ContentResultRepository::class);
+            $contentResultRepository = GeneralUtility::makeInstance(ContentResultRepository::class);
 
             /** @var ContentResult $existingContentResult */
             $existingContentResult = $contentResultRepository->findOneByUserAndContentId($user['uid'], $postData['contentId']);
@@ -88,10 +89,10 @@ class AjaxController extends ActionController
                 $contentResultRepository->update($existingContentResult);
             } else {
                 $contentResult = new ContentResult($content, $frontendUser, (int)$postData['score'], (int)$postData['maxScore'], (int)$postData['opened'], (int)$postData['finished'], (int)$postData['time']);
-                $contentResult->setPid($GLOBALS['TSFE']->id);
+                $contentResult->setPid($this->request->getAttribute('frontend.page.information')->getId());
                 $contentResultRepository->add($contentResult);
             }
-            $persistenceManager = $this->objectManager->get(PersistenceManager::class);
+            $persistenceManager = GeneralUtility::makeInstance(PersistenceManager::class);
             $persistenceManager->persistAll();
             H5PCore::ajaxSuccess();
             exit;
@@ -103,7 +104,7 @@ class AjaxController extends ActionController
     /**
      * Finish action
      */
-    public function contentUserDataAction()
+    public function contentUserDataAction(): ResponseInterface
     {
     }
 

@@ -1,18 +1,6 @@
 <?php
 namespace MichielRoos\H5p\Domain\Model;
 
-/*
- * This file is part of the TYPO3 CMS project.
- *
- * It is free software; you can redistribute it and/or modify it under
- * the terms of the GNU General Public License, either version 2
- * of the License, or any later version.
- *
- * For the full copyright and license information, please read the
- * LICENSE.txt file that was distributed with this source code.
- *
- * The TYPO3 project - inspiring people to share!
- */
 
 use TYPO3\CMS\Core\Resource\File;
 use TYPO3\CMS\Extbase\DomainObject\AbstractEntity;
@@ -29,22 +17,22 @@ class CachedAsset extends AbstractEntity
     /**
      * @var File
      */
-    protected $resource;
+    protected File $resource;
 
     /**
      * @var ObjectStorage<Library>
      */
-    protected $libraries;
+    protected ObjectStorage $libraries;
 
     /**
      * @var string
      */
-    protected $hashKey;
+    protected string $hashKey;
 
     /**
      * @var string
      */
-    protected $type;
+    protected string $type;
 
     public function __construct()
     {
@@ -62,7 +50,7 @@ class CachedAsset extends AbstractEntity
     /**
      * @param File $resource
      */
-    public function setResource(File $resource)
+    public function setResource(File $resource): void
     {
         $this->resource = $resource;
     }
@@ -70,7 +58,7 @@ class CachedAsset extends AbstractEntity
     /**
      * @return ObjectStorage
      */
-    public function getLibraries()
+    public function getLibraries(): ObjectStorage
     {
         return $this->libraries;
     }
@@ -78,7 +66,7 @@ class CachedAsset extends AbstractEntity
     /**
      * @param ObjectStorage $libraries
      */
-    public function setLibraries(ObjectStorage $libraries)
+    public function setLibraries(ObjectStorage $libraries): void
     {
         $this->libraries = $libraries;
     }
@@ -86,7 +74,7 @@ class CachedAsset extends AbstractEntity
     /**
      * @param Library $library
      */
-    public function addLibrary(Library $library)
+    public function addLibrary(Library $library): void
     {
         $this->libraries->attach($library);
     }
@@ -94,7 +82,7 @@ class CachedAsset extends AbstractEntity
     /**
      * @return string
      */
-    public function getHashKey()
+    public function getHashKey(): string
     {
         return $this->hashKey;
     }
@@ -102,7 +90,7 @@ class CachedAsset extends AbstractEntity
     /**
      * @param string $hashKey
      */
-    public function setHashKey(string $hashKey)
+    public function setHashKey(string $hashKey): void
     {
         $this->hashKey = $hashKey;
     }
@@ -110,7 +98,7 @@ class CachedAsset extends AbstractEntity
     /**
      * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         return $this->type;
     }
@@ -118,7 +106,7 @@ class CachedAsset extends AbstractEntity
     /**
      * @param string $type
      */
-    public function setType(string $type)
+    public function setType(string $type): void
     {
         $this->type = $type;
     }

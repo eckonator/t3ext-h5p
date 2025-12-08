@@ -1,0 +1,43 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  MichielRoos\H5p\:
+    resource: '../Classes/*'
+    exclude: '../Classes/Adapter/Core/*'
+
+#  MichielRoos\H5p\Property\TypeConverter\UploadedFileReferenceConverter:
+#    tags:
+#      name: extbase.type_converter
+#  MichielRoos\H5p\Property\TypeConverter\ObjectStorageConverter:
+#    tags:
+#      name: extbase.type_converter
+
+  TYPO3\CMS\Backend\Template\ModuleTemplateFactory:
+    public: true
+
+  TYPO3\CMS\Core\Page\PageRenderer:
+    arguments:
+      $assetsCache: '@cache.assets'
+
+  TYPO3\CMS\Core\Imaging\IconFactory:
+    public: true
+
+  H5PFrameworkInterface:
+    class: 'H5PFrameworkInterface'
+    public: true
+
+  H5PFileStorage:
+    class: 'H5PFileStorage'
+    public: true
+
+  TYPO3\CMS\Backend\Routing\UriBuilder:
+    public: true
+
+  MichielRoos\H5p\Controller\H5pModuleController:
+    public: true
+
+  MichielRoos\H5p\Backend\EditorController:
+    public: true

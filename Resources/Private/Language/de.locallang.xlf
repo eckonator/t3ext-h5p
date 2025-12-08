@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+	<file source-language="en" target-language="de" datatype="plaintext" original="EXT:h5p/Resources/Private/Language/locallang.xlf" date="2025-11-27T13:34:07Z" product-name="h5p">
+		<header/>
+		<body>
+			<trans-unit id="tx_h5p_library" resname="tx_h5p_library">
+				<source>H5P Library</source>
+				<target>H5P-Bibliothek</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.title" resname="tx_h5p_library.title">
+				<source>Title</source>
+				<target>Titel</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.drop_library_css" resname="tx_h5p_library.drop_library_css">
+				<source>Drop library CSS</source>
+				<target>Abwurfbibliothek CSS</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.drop_library_js" resname="tx_h5p_library.drop_library_js">
+				<source>Drop library JS</source>
+				<target>Bibliothek JS ablegen</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.embed_types" resname="tx_h5p_library.embed_types">
+				<source>Embed types</source>
+				<target>Typen einbetten</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.fullscreen" resname="tx_h5p_library.fullscreen">
+				<source>Fullscreen</source>
+				<target>Vollbildschirm</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.has_icon" resname="tx_h5p_library.has_icon">
+				<source>Has icon</source>
+				<target>Hat Symbol</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.machine_name" resname="tx_h5p_library.machine_name">
+				<source>Machine name</source>
+				<target>Name der Maschine</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.major_version" resname="tx_h5p_library.major_version">
+				<source>Major version</source>
+				<target>Hauptversion</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.minor_version" resname="tx_h5p_library.minor_version">
+				<source>Minor version</source>
+				<target>Kleinere Version</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.patch_version" resname="tx_h5p_library.patch_version">
+				<source>Patch version</source>
+				<target>Patch-Version</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.preloaded_css" resname="tx_h5p_library.preloaded_css">
+				<source>Preloaded CSS</source>
+				<target>Vorgeladenes CSS</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.preloaded_js" resname="tx_h5p_library.preloaded_js">
+				<source>Preloaded JS</source>
+				<target>Vorgeladenes JS</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.runnable" resname="tx_h5p_library.runnable">
+				<source>Runnable</source>
+				<target>Lauffähig</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.semantics" resname="tx_h5p_library.semantics">
+				<source>Semantics</source>
+				<target>Semantik</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.tutorial_url" resname="tx_h5p_library.tutorial_url">
+				<source>Tutorial URL</source>
+				<target>Tutorial-URL</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.addto" resname="tx_h5p_library.addto">
+				<source>Add to</source>
+				<target>Hinzufügen zu</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.restricted" resname="tx_h5p_library.restricted">
+				<source>Restricted</source>
+				<target>Eingeschränkt</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.createdAt" resname="tx_h5p_library.createdAt">
+				<source>Created at</source>
+				<target>Erstellt am</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_library.updatedAt" resname="tx_h5p_library.updatedAt">
+				<source>Updated at</source>
+				<target>Aktualisiert am</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry" resname="tx_h5p_domain_model_contenttypecacheentry">
+				<source>H5P Content type cache entry</source>
+				<target>H5P Inhaltstyp-Cache-Eintrag</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.h5pMajorVersion" resname="tx_h5p_domain_model_contenttypecacheentry.h5pMajorVersion">
+				<source>h5pMajorVersion</source>
+				<target>h5pMajorVersion</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.h5pMinorVersion" resname="tx_h5p_domain_model_contenttypecacheentry.h5pMinorVersion">
+				<source>h5pMinorVersion</source>
+				<target>h5pMinorVersion</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.machineName" resname="tx_h5p_domain_model_contenttypecacheentry.machineName">
+				<source>machineName</source>
+				<target>Maschinenname</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.majorVersion" resname="tx_h5p_domain_model_contenttypecacheentry.majorVersion">
+				<source>majorVersion</source>
+				<target>majorVersion</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.minorVersion" resname="tx_h5p_domain_model_contenttypecacheentry.minorVersion">
+				<source>minorVersion</source>
+				<target>minorVersion</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.categories" resname="tx_h5p_domain_model_contenttypecacheentry.categories">
+				<source>categories</source>
+				<target>Kategorien</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.createdAt" resname="tx_h5p_domain_model_contenttypecacheentry.createdAt">
+				<source>createdAt</source>
+				<target>createdAt</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.description" resname="tx_h5p_domain_model_contenttypecacheentry.description">
+				<source>description</source>
+				<target>Beschreibung</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.example" resname="tx_h5p_domain_model_contenttypecacheentry.example">
+				<source>example</source>
+				<target>Beispiel</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.icon" resname="tx_h5p_domain_model_contenttypecacheentry.icon">
+				<source>icon</source>
+				<target>Symbol</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.isRecommended" resname="tx_h5p_domain_model_contenttypecacheentry.isRecommended">
+				<source>isRecommended</source>
+				<target>isRecommended</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.keywords" resname="tx_h5p_domain_model_contenttypecacheentry.keywords">
+				<source>keywords</source>
+				<target>Schlüsselwörter</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.license" resname="tx_h5p_domain_model_contenttypecacheentry.license">
+				<source>license</source>
+				<target>Lizenz</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.owner" resname="tx_h5p_domain_model_contenttypecacheentry.owner">
+				<source>owner</source>
+				<target>Eigentümer</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.patchVersion" resname="tx_h5p_domain_model_contenttypecacheentry.patchVersion">
+				<source>patchVersion</source>
+				<target>patchVersion</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.popularity" resname="tx_h5p_domain_model_contenttypecacheentry.popularity">
+				<source>popularity</source>
+				<target>Popularität</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.screenshots" resname="tx_h5p_domain_model_contenttypecacheentry.screenshots">
+				<source>screenshots</source>
+				<target>screenshots</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.summary" resname="tx_h5p_domain_model_contenttypecacheentry.summary">
+				<source>summary</source>
+				<target>Zusammenfassung</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.updatedAt" resname="tx_h5p_domain_model_contenttypecacheentry.updatedAt">
+				<source>updatedAt</source>
+				<target>updatedAt</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.title" resname="tx_h5p_domain_model_contenttypecacheentry.title">
+				<source>title</source>
+				<target>Titel</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contenttypecacheentry.tutorial" resname="tx_h5p_domain_model_contenttypecacheentry.tutorial">
+				<source>tutorial</source>
+				<target>Lehrgang</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_librarytranslation" resname="tx_h5p_domain_model_librarytranslation">
+				<source>H5P Library translation</source>
+				<target>Übersetzung der H5P-Bibliothek</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_librarytranslation.library" resname="tx_h5p_domain_model_librarytranslation.library">
+				<source>Library</source>
+				<target>Bibliothek</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_librarytranslation.languageCode" resname="tx_h5p_domain_model_librarytranslation.languageCode">
+				<source>Language code</source>
+				<target>Sprachcode</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_librarytranslation.translation" resname="tx_h5p_domain_model_librarytranslation.translation">
+				<source>Translation</source>
+				<target>Übersetzung</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_librarydependency" resname="tx_h5p_domain_model_librarydependency">
+				<source>H5P Library dependency</source>
+				<target>Abhängigkeit von der H5P-Bibliothek</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_librarydependency.library" resname="tx_h5p_domain_model_librarydependency.library">
+				<source>Library</source>
+				<target>Bibliothek</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_librarydependency.requiredlibrary" resname="tx_h5p_domain_model_librarydependency.requiredlibrary">
+				<source>Required library</source>
+				<target>Erforderliche Bibliothek</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_librarydependency.dependencytype" resname="tx_h5p_domain_model_librarydependency.dependencytype">
+				<source>Dependency type</source>
+				<target>Abhängigkeitsart</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contentdependency" resname="tx_h5p_domain_model_contentdependency">
+				<source>H5P Content dependency</source>
+				<target>H5P Inhaltsabhängigkeit</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contentdependency.library" resname="tx_h5p_domain_model_contentdependency.library">
+				<source>Library</source>
+				<target>Bibliothek</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contentdependency.content" resname="tx_h5p_domain_model_contentdependency.content">
+				<source>Content</source>
+				<target>Inhalt</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contentdependency.dependencytype" resname="tx_h5p_domain_model_contentdependency.dependencytype">
+				<source>Dependency type</source>
+				<target>Abhängigkeitsart</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contentdependency.weight" resname="tx_h5p_domain_model_contentdependency.weight">
+				<source>Weight</source>
+				<target>Gewicht</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contentdependency.dropCss" resname="tx_h5p_domain_model_contentdependency.dropCss">
+				<source>Drop CSS</source>
+				<target>CSS ablegen</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contentresult" resname="tx_h5p_domain_model_contentresult">
+				<source>H5P content result</source>
+				<target>Ergebnis des H5P-Gehalts</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contentresult.user" resname="tx_h5p_domain_model_contentresult.user">
+				<source>User</source>
+				<target>Benutzer</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contentresult.content" resname="tx_h5p_domain_model_contentresult.content">
+				<source>Content</source>
+				<target>Inhalt</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contentresult.score" resname="tx_h5p_domain_model_contentresult.score">
+				<source>Score</source>
+				<target>Ergebnis</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contentresult.opened" resname="tx_h5p_domain_model_contentresult.opened">
+				<source>Opened</source>
+				<target>Geöffnet</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contentresult.max_score" resname="tx_h5p_domain_model_contentresult.max_score">
+				<source>Max score</source>
+				<target>Maximale Punktzahl</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contentresult.result" resname="tx_h5p_domain_model_contentresult.result">
+				<source>Result</source>
+				<target>Ergebnis</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contentresult.finished" resname="tx_h5p_domain_model_contentresult.finished">
+				<source>Finished</source>
+				<target>Fertige</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_contentresult.time" resname="tx_h5p_domain_model_contentresult.time">
+				<source>Time</source>
+				<target>Zeit</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content" resname="tx_h5p_domain_model_content">
+				<source>H5P Content</source>
+				<target>H5P Inhalt</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.title" resname="tx_h5p_domain_model_content.title">
+				<source>Title</source>
+				<target>Titel</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.parameters" resname="tx_h5p_domain_model_content.parameters">
+				<source>Parameters</source>
+				<target>Parameter</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.package" resname="tx_h5p_domain_model_content.package">
+				<source>H5p package file</source>
+				<target>H5p-Paketdatei</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.library" resname="tx_h5p_domain_model_content.library">
+				<source>Library</source>
+				<target>Bibliothek</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.filtered" resname="tx_h5p_domain_model_content.filtered">
+				<source>Filtered</source>
+				<target>Gefiltert</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.slug" resname="tx_h5p_domain_model_content.slug">
+				<source>Slug</source>
+				<target>Schnecke</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.embed_type" resname="tx_h5p_domain_model_content.embed_type">
+				<source>Embed type</source>
+				<target>Typ einbetten</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.disable" resname="tx_h5p_domain_model_content.disable">
+				<source>Disable</source>
+				<target>Deaktivieren Sie</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.content_type" resname="tx_h5p_domain_model_content.content_type">
+				<source>Content type</source>
+				<target>Art des Inhalts</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.author" resname="tx_h5p_domain_model_content.author">
+				<source>Author</source>
+				<target>Autor</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.license" resname="tx_h5p_domain_model_content.license">
+				<source>License</source>
+				<target>Lizenz</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.keywords" resname="tx_h5p_domain_model_content.keywords">
+				<source>keywords</source>
+				<target>Schlüsselwörter</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.description" resname="tx_h5p_domain_model_content.description">
+				<source>Description</source>
+				<target>Beschreibung</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.authors" resname="tx_h5p_domain_model_content.authors">
+				<source>authors</source>
+				<target>Autoren</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.source" resname="tx_h5p_domain_model_content.source">
+				<source>source</source>
+				<target>Quelle</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.year_from" resname="tx_h5p_domain_model_content.year_from">
+				<source>year_from</source>
+				<target>Jahr_vom</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.year_to" resname="tx_h5p_domain_model_content.year_to">
+				<source>year_to</source>
+				<target>jahr_bis</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.license_version" resname="tx_h5p_domain_model_content.license_version">
+				<source>license_version</source>
+				<target>lizenz_version</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.license_extras" resname="tx_h5p_domain_model_content.license_extras">
+				<source>license_extras</source>
+				<target>lizenz_extras</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.author_comments" resname="tx_h5p_domain_model_content.author_comments">
+				<source>author_comments</source>
+				<target>autor_kommentare</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.changes" resname="tx_h5p_domain_model_content.changes">
+				<source>changes</source>
+				<target>Änderungen</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.createdAt" resname="tx_h5p_domain_model_content.createdAt">
+				<source>Created at</source>
+				<target>Erstellt am</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_content.updatedAt" resname="tx_h5p_domain_model_content.updatedAt">
+				<source>Updated at</source>
+				<target>Aktualisiert am</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_configsetting" resname="tx_h5p_domain_model_configsetting">
+				<source>H5P Config Setting</source>
+				<target>H5P-Konfigurationseinstellung</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_configsetting.config_key" resname="tx_h5p_domain_model_configsetting.config_key">
+				<source>Config key</source>
+				<target>Konfig-Taste</target>
+			</trans-unit>
+			<trans-unit id="tx_h5p_domain_model_configsetting.config_value" resname="tx_h5p_domain_model_configsetting.config_value">
+				<source>Config value</source>
+				<target>Konfig-Wert</target>
+			</trans-unit>
+			<trans-unit id="settings.toolbarBelowContent" resname="settings.toolbarBelowContent">
+				<source>Display toolbar below content: Display a toolbar below each H5P element</source>
+				<target>Symbolleiste unter dem Inhalt anzeigen: Eine Symbolleiste unter jedem H5P-Element anzeigen</target>
+			</trans-unit>
+			<trans-unit id="settings.allowDownload" resname="settings.allowDownload">
+				<source>Allow users to download the content</source>
+				<target>Ermöglichen Sie den Nutzern das Herunterladen der Inhalte</target>
+			</trans-unit>
+			<trans-unit id="settings.displayEmbed" resname="settings.displayEmbed">
+				<source>Display Embed button</source>
+				<target>Schaltfläche &quot;Einbetten&quot; anzeigen</target>
+			</trans-unit>
+			<trans-unit id="settings.displayCopyright" resname="settings.displayCopyright">
+				<source>Display Copyright button</source>
+				<target>Schaltfläche Copyright anzeigen</target>
+			</trans-unit>
+			<trans-unit id="settings.onlyAllowRecordsInSysfolders" resname="settings.onlyAllowRecordsInSysfolders">
+				<source>Only allow H5P records in sysfolders: Keep your records organised</source>
+				<target>Lassen Sie nur H5P-Datensätze in Sysfoldern zu: Halten Sie Ihre Aufzeichnungen organisiert</target>
+			</trans-unit>
+			<trans-unit id="module.menu.choose" resname="module.menu.choose">
+				<source>...</source>
+				<target>...</target>
+			</trans-unit>
+			<trans-unit id="module.menu.index" resname="module.menu.index">
+				<source>All H5P content</source>
+				<target>Alle H5P-Inhalte</target>
+			</trans-unit>
+			<trans-unit id="module.menu.content" resname="module.menu.content">
+				<source>H5P content on current page</source>
+				<target>H5P-Inhalt auf der aktuellen Seite</target>
+			</trans-unit>
+			<trans-unit id="content_on_current_page" resname="content_on_current_page">
+				<source>Content on current page</source>
+				<target>Inhalt der aktuellen Seite</target>
+			</trans-unit>
+			<trans-unit id="action.index.title" resname="action.index.title">
+				<source>Content</source>
+				<target>Inhalt</target>
+			</trans-unit>
+			<trans-unit id="module.menu.libraries" resname="module.menu.libraries">
+				<source>Libraries</source>
+				<target>Bibliotheken</target>
+			</trans-unit>
+			<trans-unit id="contentElements" resname="contentElements">
+				<source>Content elements</source>
+				<target>Inhaltliche Elemente</target>
+			</trans-unit>
+			<trans-unit id="module.menu.new" resname="module.menu.new">
+				<source>Add new</source>
+				<target>Neu hinzufügen</target>
+			</trans-unit>
+			<trans-unit id="module.menu.edit" resname="module.menu.edit">
+				<source>Edit</source>
+				<target>bearbeiten</target>
+			</trans-unit>
+		</body>
+	</file>
+</xliff>

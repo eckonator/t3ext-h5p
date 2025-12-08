@@ -21,6 +21,7 @@ class H5peditor {
     'scripts/h5peditor-semantic-structure.js',
     'scripts/h5peditor-editor.js',
     'scripts/h5peditor-library-selector.js',
+    'scripts/h5peditor-fullscreen-bar.js',
     'scripts/h5peditor-form.js',
     'scripts/h5peditor-text.js',
     'scripts/h5peditor-html.js',
@@ -50,14 +51,14 @@ class H5peditor {
     'ckeditor/ckeditor.js',
   );
   private $h5p, $storage;
-  public $ajax, $ajaxInterface;
+  public $ajax, $ajaxInterface, $content;
 
   /**
    * Constructor for the core editor library.
    *
-   * @param H5PCore $h5p Instance of core
-   * @param H5peditorStorage $storage Instance of h5peditor storage interface
-   * @param H5PEditorAjaxInterface $ajaxInterface Instance of h5peditor ajax
+   * @param \H5PCore $h5p Instance of core
+   * @param \H5peditorStorage $storage Instance of h5peditor storage interface
+   * @param \H5PEditorAjaxInterface $ajaxInterface Instance of h5peditor ajax
    * interface
    */
   function __construct($h5p, $storage, $ajaxInterface) {
@@ -372,24 +373,27 @@ class H5peditor {
    *
    * @return array Libraries that was requested
    */
-  public function getLibraryData($machineName, $majorVersion, $minorVersion, $languageCode, $prefix = '', $fileDir = '', $defaultLanguage) {
+  public function getLibraryData($machineName, $majorVersion, $minorVersion, $languageCode, $prefix = '', $fileDir = '', $defaultLanguage = '') {
     $libraryData = new stdClass();
 
-    // Include name and version in data object for convenience
-    $libraryData->name = $machineName;
-    $libraryData->version = (object) array('major' => $majorVersion, 'minor' => $minorVersion);
+    $library = $this->h5p->loadLibrary($machineName, $majorVersion, $minorVersion);
 
-    $libraryData->upgradesScript = $this->h5p->fs->getUpgradeScript($machineName, $majorVersion, $minorVersion);
+    // Include name and version in data object for convenience
+    $libraryData->name = $library['machineName'];
+    $libraryData->version = (object) array('major' => $library['majorVersion'], 'minor' => $library['minorVersion']);
+    $libraryData->title = $library['title'];
+
+    $libraryData->upgradesScript = $this->h5p->fs->getUpgradeScript($library['machineName'], $library['majorVersion'], $library['minorVersion']);
     if ($libraryData->upgradesScript !== NULL) {
       // If valid add URL prefix
       $libraryData->upgradesScript = $this->h5p->url . $prefix . $libraryData->upgradesScript;
     }
 
-    $libraries              = $this->findEditorLibraries($machineName, $majorVersion, $minorVersion);
-    $libraryData->semantics = $this->h5p->loadLibrarySemantics($machineName, $majorVersion, $minorVersion);
-    $libraryData->language  = $this->getLibraryLanguage($machineName, $majorVersion, $minorVersion, $languageCode);
-    $libraryData->defaultLanguage = empty($defaultLanguage) ? NULL : $this->getLibraryLanguage($machineName, $majorVersion, $minorVersion, $defaultLanguage);
-    $libraryData->languages = $this->storage->getAvailableLanguages($machineName, $majorVersion, $minorVersion);
+    $libraries              = $this->findEditorLibraries($library['machineName'], $library['majorVersion'], $library['minorVersion']);
+    $libraryData->semantics = $this->h5p->loadLibrarySemantics($library['machineName'], $library['majorVersion'], $library['minorVersion']);
+    $libraryData->language  = $this->getLibraryLanguage($library['machineName'], $library['majorVersion'], $library['minorVersion'], $languageCode);
+    $libraryData->defaultLanguage = empty($defaultLanguage) ? NULL : $this->getLibraryLanguage($library['machineName'], $library['majorVersion'], $library['minorVersion'], $defaultLanguage);
+    $libraryData->languages = $this->storage->getAvailableLanguages($library['machineName'], $library['majorVersion'], $library['minorVersion']);
 
     // Temporarily disable asset aggregation
     $aggregateAssets            = $this->h5p->aggregateAssets;
@@ -399,9 +403,8 @@ class H5peditor {
 
     // Get list of JS and CSS files that belongs to the dependencies
     $files = $this->h5p->getDependenciesFiles($libraries, $prefix);
-    $libraryName = H5PCore::libraryToString(compact('machineName', 'majorVersion', 'minorVersion'), true);
-    if( $this->hasPresave($libraryName) === true ){
-      $library = $this->h5p->loadLibrary($machineName, $majorVersion, $minorVersion);
+    $libraryName = H5PCore::libraryToFolderName($library);
+    if ($this->hasPresave($libraryName) === true) {
       $this->addPresaveFile($files, $library, $prefix);
     }
     $this->storage->alterLibraryFiles($files, $libraries);
@@ -593,6 +596,9 @@ class H5peditor {
     if (!empty($cached_library->example)) {
       $lib['example'] = $cached_library->example;
     }
+    if (!empty($cached_library->icons)) {
+      $lib['icons'] = json_decode($cached_library->icons);
+    }
 
     return $lib;
   }
@@ -619,11 +625,13 @@ class H5peditor {
       // Check if icon is available locally:
       if ($local_lib->has_icon) {
         // Create path to icon:
-        $library_folder = H5PCore::libraryToString(array(
+        $library_folder = H5PCore::libraryToFolderName([
           'machineName' => $local_lib->machine_name,
           'majorVersion' => $local_lib->major_version,
-          'minorVersion' => $local_lib->minor_version
-        ), TRUE);
+          'minorVersion' => $local_lib->minor_version,
+          'patchVersion' => $local_lib->patch_version,
+          'patchVersionInFolderName' => $local_lib->patch_version_in_folder_name ?? 0
+        ]);
         $icon_path = $this->h5p->h5pF->getLibraryFileUrl($library_folder, 'icon.svg');
       }
 
@@ -741,7 +749,7 @@ class H5peditor {
    * @param string $prefix
    */
   public function addPresaveFile(&$assets, $library, $prefix = ''){
-    $path = 'libraries' . DIRECTORY_SEPARATOR . H5PCore::libraryToString($library, true);
+    $path = 'libraries' . '/' . H5PCore::libraryToFolderName($library);
     if( array_key_exists('path', $library)){
       $path = $library['path'];
     }
@@ -751,7 +759,7 @@ class H5peditor {
     }
 
     $assets['scripts'][] = (object) array(
-      'path' => $prefix . DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR . 'presave.js',
+      'path' => $prefix . '/' . $path . '/' . 'presave.js',
       'version' => $version,
     );
   }

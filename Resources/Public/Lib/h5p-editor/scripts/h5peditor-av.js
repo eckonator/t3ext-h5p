@@ -104,10 +104,11 @@ H5PEditor.widgets.video = H5PEditor.widgets.audio = H5PEditor.AV = (function ($)
    */
   C.prototype.appendTo = function ($wrapper) {
     var self = this;
+    const id = ns.getNextFieldId(this.field);
 
     var imageHtml =
       '<ul class="file list-unstyled"></ul>' +
-      (self.field.widgetExtensions ? C.createTabbedAdd(self.field.type, self.field.widgetExtensions) : C.createAdd(self.field.type))
+      (self.field.widgetExtensions ? C.createTabbedAdd(self.field.type, self.field.widgetExtensions, id, self.field.description !== undefined) : C.createAdd(self.field.type, id, self.field.description !== undefined))
 
     if (!this.field.disableCopyright) {
       imageHtml += '<a class="h5p-copyright-button" href="#">' + H5PEditor.t('core', 'editCopyright') + '</a>';
@@ -117,9 +118,9 @@ H5PEditor.widgets.video = H5PEditor.widgets.audio = H5PEditor.AV = (function ($)
       '<a href="#" class="h5p-close" title="' + H5PEditor.t('core', 'close') + '"></a>' +
       '</div>';
 
-    var html = H5PEditor.createFieldMarkup(this.field, imageHtml);
-
+    var html = H5PEditor.createFieldMarkup(this.field, imageHtml, id);
     var $container = $(html).appendTo($wrapper);
+
     this.$files = $container.children('.file');
     this.$add = $container.children('.h5p-add-file').click(function () {
       self.$addDialog.addClass('h5p-open');
@@ -317,14 +318,11 @@ H5PEditor.widgets.video = H5PEditor.widgets.audio = H5PEditor.AV = (function ($)
     var defaultQualityName = H5PEditor.t('core', 'videoQualityDefaultLabel', { ':index': index + 1 });
     var qualityName = (file.metadata && file.metadata.qualityName) ? file.metadata.qualityName : defaultQualityName;
 
-    // Check if source is YouTube
-    var youtubeRegex = C.providers.filter(function (provider) {
-      return provider.name === 'YouTube';
-    })[0].regexp;
-    var isYoutube = file.path && file.path.match(youtubeRegex);
+    // Check if source is provider (Vimeo, YouTube, Panopto)
+    const isProvider = file.path && C.findProvider(file.path);
 
     // Only allow single source if YouTube
-    if (isYoutube) {
+    if (isProvider) {
       // Remove all other files except this one
       that.$files.children().each(function (i) {
         if (i !== that.updateIndex) {
@@ -338,7 +336,7 @@ H5PEditor.widgets.video = H5PEditor.widgets.audio = H5PEditor.AV = (function ($)
       // This is now the first and only file
       index = 0;
     }
-    this.$add.toggleClass('hidden', !!isYoutube);
+    this.$add.toggleClass('hidden', isProvider);
 
     // If updating remove and recreate element
     if (that.updateIndex !== undefined) {
@@ -348,7 +346,7 @@ H5PEditor.widgets.video = H5PEditor.widgets.audio = H5PEditor.AV = (function ($)
     }
 
     // Create file with customizable quality if enabled and not youtube
-    if (this.field.enableCustomQualityLabel === true && !isYoutube) {
+    if (this.field.enableCustomQualityLabel === true && !isProvider) {
       fileHtml = '<li class="h5p-av-row">' +
         '<div class="h5p-thumbnail">' +
           '<div class="h5p-type" title="' + file.mime + '">' + file.mime.split('/')[1] + '</div>' +
@@ -459,6 +457,7 @@ H5PEditor.widgets.video = H5PEditor.widgets.audio = H5PEditor.AV = (function ($)
     }
 
     var mime;
+    var aspectRatio;
     var i;
     var matches = url.match(/\.(webm|mp4|ogv|m4a|mp3|ogg|oga|wav)/i);
     if (matches !== null) {
@@ -466,18 +465,18 @@ H5PEditor.widgets.video = H5PEditor.widgets.audio = H5PEditor.AV = (function ($)
     }
     else {
       // Try to find a provider
-      for (i = 0; i < C.providers.length; i++) {
-        if (C.providers[i].regexp.test(url)) {
-          mime = C.providers[i].name;
-          break;
-        }
+      const provider = C.findProvider(url);
+      if (provider) {
+        mime = provider.name;
+        aspectRatio = provider.aspectRatio;
       }
     }
 
     var file = {
       path: url,
       mime: this.field.type + '/' + (mime ? mime : 'unknown'),
-      copyright: this.copyright
+      copyright: this.copyright,
+      aspectRatio: aspectRatio ? aspectRatio : undefined,
     };
     var index = (this.updateIndex !== undefined ? this.updateIndex : this.params.length);
     this.params[index] = file;
@@ -554,11 +553,13 @@ H5PEditor.widgets.video = H5PEditor.widgets.audio = H5PEditor.AV = (function ($)
    * Create the HTML for the dialog itself.
    *
    * @param {string} content HTML
-   * @param {boolea} disableInsert
+   * @param {boolean} disableInsert
+   * @param {string} id
+   * @param {boolean} hasDescription
    * @returns {string} HTML
    */
-  C.createInsertDialog = function (content, disableInsert) {
-    return '<div role="button" tabindex="0" class="h5p-add-file" title="' + H5PEditor.t('core', 'addFile') + '"></div>' +
+  C.createInsertDialog = function (content, disableInsert, id, hasDescription) {
+    return '<div role="button" tabindex="0" id="' + id + '"' + (hasDescription ? ' aria-describedby="' + ns.getDescriptionId(id) + '"' : '') + ' class="h5p-add-file" title="' + H5PEditor.t('core', 'addFile') + '"></div>' +
       '<div class="h5p-dialog-anchor"><div class="h5p-add-dialog">' +
         '<div class="h5p-add-dialog-table">' + content + '</div>' +
         '<div class="h5p-buttons">' +
@@ -576,21 +577,22 @@ H5PEditor.widgets.video = H5PEditor.widgets.audio = H5PEditor.AV = (function ($)
    * @returns {string} HTML
    */
   C.createTabContent = function (tab, type) {
-    switch (tab) {
+    const isAudio = (type === 'audio');
 
+    switch (tab) {
       case 'BasicFileUpload':
         const id = 'av-upload-' + C.getNextId();
-        return '<h3 id="' + id + '">' + H5PEditor.t('core', type === 'audio' ? 'uploadAudioTitle' : 'uploadVideoTitle') + '</h3>' +
+        return '<h3 id="' + id + '">' + H5PEditor.t('core', isAudio ? 'uploadAudioTitle' : 'uploadVideoTitle') + '</h3>' +
           '<div class="h5p-file-drop-upload" tabindex="0" role="button" aria-labelledby="' + id + '">' +
-            '<div class="h5p-file-drop-upload-inner"/>' +
+            '<div class="h5p-file-drop-upload-inner ' + type + '"></div>' +
           '</div>';
 
       case 'InputLinkURL':
-        return '<h3>' + H5PEditor.t('core', type === 'audio' ? 'enterAudioTitle' : 'enterVideoTitle') + '</h3>' +
-          '<div class="h5p-file-url-wrapper">' +
-            '<input type="text" placeholder="' + H5PEditor.t('core', type === 'audio' ? 'enterAudioUrl' : 'enterVideoUrl') + '" class="h5p-file-url h5peditor-text"/>' +
+        return '<h3>' + H5PEditor.t('core', isAudio ? 'enterAudioTitle' : 'enterVideoTitle') + '</h3>' +
+          '<div class="h5p-file-url-wrapper ' + type + '">' +
+            '<input type="text" placeholder="' + H5PEditor.t('core', isAudio ? 'enterAudioUrl' : 'enterVideoUrl') + '" class="h5p-file-url h5peditor-text"/>' +
           '</div>' +
-          (type === 'audio' ? '' : '<div class="h5p-errors"></div><div class="h5peditor-field-description">' + H5PEditor.t('core', 'addVideoDescription') + '</div>');
+          (isAudio ? '' : '<div class="h5p-errors"></div><div class="h5peditor-field-description">' + H5PEditor.t('core', 'addVideoDescription') + '</div>');
 
       default:
         return '';
@@ -605,7 +607,7 @@ H5PEditor.widgets.video = H5PEditor.widgets.audio = H5PEditor.AV = (function ($)
    * @param {Array} extraTabs
    * @returns {string} HTML
    */
-  C.createTabbedAdd = function (type, extraTabs) {
+  C.createTabbedAdd = function (type, extraTabs, id, hasDescription) {
     let i;
 
     const tabs = [
@@ -632,7 +634,7 @@ H5PEditor.widgets.video = H5PEditor.widgets.audio = H5PEditor.AV = (function ($)
 
     return C.createInsertDialog(
       '<div class="av-tablist" role="tablist" aria-label="' + H5PEditor.t('core', 'avTablistLabel') + '">' + tabsHTML + '</div>' + tabpanelsHTML,
-      true
+      true, id, hasDescription
     );
   };
 
@@ -640,9 +642,11 @@ H5PEditor.widgets.video = H5PEditor.widgets.audio = H5PEditor.AV = (function ($)
    * Creates the HTML for the basic 'Upload or URL' dialog.
    *
    * @param {string} type 'video' or 'audio'
+   * @param {string} id
+   * @param {boolean} hasDescription
    * @returns {string} HTML
    */
-  C.createAdd = function (type) {
+  C.createAdd = function (type, id, hasDescription) {
     return C.createInsertDialog(
       '<div class="h5p-dialog-box">' +
         C.createTabContent('BasicFileUpload', type) +
@@ -655,7 +659,8 @@ H5PEditor.widgets.video = H5PEditor.widgets.audio = H5PEditor.AV = (function ($)
       '</div>' +
       '<div class="h5p-dialog-box">' +
           C.createTabContent('InputLinkURL', type) +
-      '</div>'
+      '</div>',
+      false, id, hasDescription
     );
   };
 
@@ -663,10 +668,37 @@ H5PEditor.widgets.video = H5PEditor.widgets.audio = H5PEditor.AV = (function ($)
    * Providers incase mime type is unknown.
    * @public
    */
-  C.providers = [{
-    name: 'YouTube',
-    regexp: /(?:https?:\/\/)?(?:www\.)?(?:(?:youtube.com\/(?:attribution_link\?(?:\S+))?(?:v\/|embed\/|watch\/|(?:user\/(?:\S+)\/)?watch(?:\S+)v\=))|(?:youtu.be\/|y2u.be\/))([A-Za-z0-9_-]{11})/i
-  }];
+  C.providers = [
+    {
+      name: 'YouTube',
+      regexp: /(?:https?:\/\/)?(?:www\.)?(?:(?:youtube.com\/(?:attribution_link\?(?:\S+))?(?:v\/|embed\/|watch\/|(?:user\/(?:\S+)\/)?watch(?:\S+)v\=))|(?:youtu.be\/|y2u.be\/))([A-Za-z0-9_-]{11})/i,
+      aspectRatio: '16:9',
+    },
+    {
+      name: 'Panopto',
+      regexp: /^[^\/]+:\/\/([^\/]*panopto\.[^\/]+)\/Panopto\/.+\?id=(.+)$/i,
+      aspectRatio: '16:9',
+    },
+    {
+      name: 'Vimeo',
+      regexp: /^.*(vimeo\.com\/)((channels\/[A-z]+\/)|(groups\/[A-z]+\/videos\/))?([0-9]+)/,
+      aspectRatio: '16:9',
+    }
+  ];
+
+  /**
+   * Find & return an external provider based on the URL
+   *
+   * @param {string} url
+   * @returns {Object}
+   */
+  C.findProvider = function (url) {
+    for (i = 0; i < C.providers.length; i++) {
+      if (C.providers[i].regexp.test(url)) {
+        return C.providers[i];
+      }
+    }
+  };
 
   // Avoid ID attribute collisions
   let idCounter = 0;

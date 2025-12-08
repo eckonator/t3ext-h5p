@@ -1,7 +1,13 @@
-<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
-<f:layout name="Backend/Default"/>
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      xmlns:be="http://typo3.org/ns/TYPO3/CMS/Backend/ViewHelpers"
+      data-namespace-typo3-fluid="true">
 
-<f:section name="content">
+<f:layout name="Module" />
+
+<f:be.pageRenderer includeCssFiles="{0: '{f:uri.resource(path:\'Css/Styles.css\')}'}"/>
+
+<f:section name="Content">
     <h1>Edit <em>{content.title}</em></h1>
     <f:form method="post" enctype="multipart/form-data" id="h5p-content-form" action="update" controller="H5pModule">
         <div id="post-body-content">
@@ -15,27 +21,27 @@
                 <label><input type="radio" name="action" value="upload"/>Upload</label>
                 <label><input type="radio" name="action" value="create"/>Create</label>
                 <f:form.hidden name="contentId" value="{content.uid}"/>
-                <f:form.hidden name="library" value="{library}"/>
-                <f:form.hidden name="parameters" value="{parameters}"/>
+                <f:form.hidden name="library" id="tx_h5p_web_h5pmanager_library" value="{library}"/>
+                <f:form.hidden name="parameters" id="tx_h5p_web_h5pmanager_parameters" value="{parameters}"/>
             </div>
             <div id="major-publishing-actions" class="submitbox">
-                <input type="submit" name="submit-button" value="Update" class="button button-primary button-large"/>
+                <input type="submit" name="submit-button" value="Update" class="btn btn-default"/>
             </div>
         </div>
         <div class="postbox h5p-sidebar">
             <h2>Display Options</h2>
             <div class="h5p-action-bar-settings h5p-panel">
                 <label>
-                    <f:form.checkbox name="frame" value="true" checked="checked"/>
+                    <f:form.checkbox name="frame" value="true" checked="{f:if(condition: displayOptions.frame, then: 'checked', else: '')}"/>
                     Display toolbar below content </label>
                 <label title="If checked a reuse button will always be displayed for this content and allow users to download the content as an .h5p file">
-                    <f:form.checkbox name="download" value="true" checked="checked"/>
+                    <f:form.checkbox name="download" value="true" checked="{f:if(condition: displayOptions.download, then: 'checked', else: '')}"/>
                     Allow users to download the content </label>
                 <label>
-                    <f:form.checkbox name="embed" value="true" checked="checked"/>
+                    <f:form.checkbox name="embed" value="true" checked="{f:if(condition: displayOptions.embed, then: 'checked', else: '')}"/>
                     Display Embed button </label>
                 <label>
-                    <f:form.checkbox name="copyright" value="true" checked="checked"/>
+                    <f:form.checkbox name="copyright" value="true" checked="{f:if(condition: displayOptions.copyright, then: 'checked', else: '')}"/>
                     Display Copyright button </label>
             </div>
         </div>
