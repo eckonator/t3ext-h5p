@@ -1,4 +1,4 @@
-# Howto match composer loaded packages
+# Howto patch composer loaded packages
 
 1. install `composer require cweagans/composer-patches:~2.0`
 2. move this packages folder to same level as composer.json
