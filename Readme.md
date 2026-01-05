@@ -1,7 +1,7 @@
 # TYPO3 H5P extension
 
 *Note:*
-Please also read the README.md inside the Patches subdirectory. It explains how the H5P libraries need to be patched for PHP 8.2 compatibility.
+Please also read the <a href="https://github.com/eckonator/t3ext-h5p/tree/v13/patches">README.md</a> inside the <strong>patches</strong>-subdirectory. It explains how the H5P libraries need to be patched for PHP 8.2 compatibility.
 
 | :point_up:    | Looking to be adopted by loving and caring developers. |
 |---------------|:-------------------------------------------------------|
