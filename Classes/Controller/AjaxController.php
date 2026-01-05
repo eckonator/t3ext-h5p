@@ -21,6 +21,7 @@ use MichielRoos\H5p\Domain\Repository\ContentRepository;
 use MichielRoos\H5p\Domain\Repository\ContentResultRepository;
 use Psr\Http\Message\ResponseInterface;
 use TYPO3\CMS\Core\Localization\LanguageService;
+use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Domain\Repository\FrontendUserRepository;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
@@ -31,17 +32,18 @@ use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
  */
 class AjaxController extends ActionController
 {
-    /**
-     * Content repository
-     *
-     * @var ContentRepository
-     */
-    protected $contentRepository;
 
     /**
      * @var string
      */
-    private $language;
+    private string $language;
+
+    private LanguageServiceFactory $languageServiceFactory;
+
+    public function injectLanguageServiceFactory(LanguageServiceFactory $languageServiceFactory): void
+    {
+        $this->languageServiceFactory = $languageServiceFactory;
+    }
 
     /**
      * Finish action
@@ -104,7 +106,7 @@ class AjaxController extends ActionController
     /**
      * Finish action
      */
-    public function contentUserDataAction(): ResponseInterface
+    public function contentUserDataAction(): void
     {
     }
 
@@ -113,8 +115,15 @@ class AjaxController extends ActionController
      *
      * @return LanguageService
      */
-    protected function getLanguageService()
+    protected function getLanguageService(): LanguageService
     {
-        return $GLOBALS['LANG'];
+        if (!isset($this->languageServiceFactory)) {
+            $this->languageServiceFactory = GeneralUtility::makeInstance(LanguageServiceFactory::class);
+        }
+
+        $language = $this->request?->getAttribute('language')
+            ?? $this->request?->getAttribute('site')?->getDefaultLanguage()
+            ?? throw new \RuntimeException('SiteLanguage not available');
+        return $this->languageServiceFactory->createFromSiteLanguage($language);
     }
 }

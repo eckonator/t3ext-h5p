@@ -24,14 +24,20 @@ use MichielRoos\H5p\Domain\Repository\ContentRepository;
 use MichielRoos\H5p\Domain\Repository\ContentResultRepository;
 use MichielRoos\H5p\Domain\Repository\PageRepository;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Core\Localization\LanguageService;
+use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Page\PageRenderer;
+use TYPO3\CMS\Core\Resource\Exception\InvalidFileException;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
+use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\PathUtility;
+use TYPO3\CMS\Extbase\Http\ForwardResponse;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
+use TYPO3\CMS\Extbase\Utility\DebuggerUtility;
 use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
 
 /**
@@ -44,48 +50,57 @@ class ViewController extends ActionController
      *
      * @var ContentRepository
      */
-    protected $contentRepository;
+    protected ContentRepository $contentRepository;
 
     /**
      * Content result repository
      *
      * @var ContentResultRepository
      */
-    protected $contentResultRepository;
+    protected ContentResultRepository $contentResultRepository;
 
     /**
      * @var ContentObjectRenderer
      */
-    private $contentObjectRenderer;
+    private ContentObjectRenderer $contentObjectRenderer;
 
     /**
      * @var Framework
      */
-    private $h5pFramework;
+    private Framework $h5pFramework;
 
     /**
      * @var PageRenderer
      */
-    private $pageRenderer;
+    private PageRenderer $pageRenderer;
 
     /**
      * @var string
      */
-    private $language;
+    private string $language;
 
     /**
-     * @var FileStorage|object
+     * @var FileStorage
      */
-    private $h5pFileStorage;
+    private FileStorage $h5pFileStorage;
 
     /**
-     * @var CoreFactory|object
+     * @var CoreFactory
      */
-    private $h5pCore;
-    public function __construct(ContentRepository $contentRepository, ContentResultRepository $contentResultRepository)
-    {
+    private CoreFactory $h5pCore;
+    private LanguageServiceFactory $languageServiceFactory;
+
+    public function __construct(
+        ContentRepository $contentRepository,
+        ContentResultRepository $contentResultRepository
+    ) {
         $this->contentRepository = $contentRepository;
         $this->contentResultRepository = $contentResultRepository;
+    }
+
+    public function injectLanguageServiceFactory(LanguageServiceFactory $languageServiceFactory): void
+    {
+        $this->languageServiceFactory = $languageServiceFactory;
     }
 
     /**
@@ -99,6 +114,15 @@ class ViewController extends ActionController
 
         $this->pageRenderer = GeneralUtility::makeInstance(PageRenderer::class);
 
+        $this->language = ($this->getLanguageService()->lang === 'default') ? 'en' : $this->getLanguageService()->lang;
+
+        $resourceFactory = GeneralUtility::makeInstance(ResourceFactory::class);
+        $storage = $resourceFactory->getDefaultStorage();
+        $this->h5pFramework = GeneralUtility::makeInstance(Framework::class);
+        $this->h5pFramework->setStorage($storage); // Storage nachträglich setzen
+        $this->h5pFileStorage = GeneralUtility::makeInstance(FileStorage::class, $storage);
+        $this->h5pCore = GeneralUtility::makeInstance(CoreFactory::class, $this->h5pFramework, $this->h5pFileStorage, $this->language);
+
         parent::initializeAction();
     }
 
@@ -107,15 +131,23 @@ class ViewController extends ActionController
      *
      * @return LanguageService
      */
-    protected function getLanguageService()
+    protected function getLanguageService(): LanguageService
     {
-        return $GLOBALS['LANG'];
-    }
+        if (!isset($this->languageServiceFactory)) {
+            $this->languageServiceFactory = GeneralUtility::makeInstance(LanguageServiceFactory::class);
+        }
 
+        $language = $this->request?->getAttribute('language')
+            ?? $this->request?->getAttribute('site')?->getDefaultLanguage()
+            ?? throw new \RuntimeException('SiteLanguage not available');
+        return $this->languageServiceFactory->createFromSiteLanguage($language);
+    }
 
     /**
      * Embedded action
      * @param int $contentId
+     * @return ResponseInterface
+     * @throws InvalidFileException
      */
     public function embeddedAction(int $contentId): ResponseInterface
     {
@@ -147,7 +179,7 @@ class ViewController extends ActionController
 
         $this->pageRenderer->addJsInlineCode(
             'H5PIntegration',
-            'H5PIntegration = ' . json_encode($this->getCoreSettings()) . ';', false, false, true
+            'H5PIntegration = ' . json_encode($this->getCoreSettings()) . ';', false, true, true
         );
 
 
@@ -198,6 +230,7 @@ class ViewController extends ActionController
 
     /**
      * Index action
+     * @throws InvalidFileException
      */
     public function indexAction(): ResponseInterface
     {
@@ -209,19 +242,73 @@ class ViewController extends ActionController
             return $this->htmlResponse(null);
         }
 
+        if (!$content instanceof Content) {
+            $this->addFlashMessage(sprintf('Content element with id %d not found', $data['tx_h5p_content']), 'Record not found', ContextualFeedbackSeverity::ERROR);
+            return new ForwardResponse('error');
+        }
+
+        if (!$content->getLibrary()) {
+            $this->addFlashMessage('Content element has no H5P library', 'H5P library not found on content', ContextualFeedbackSeverity::ERROR);
+            return new ForwardResponse('error');
+        }
+
+        $cacheBuster = '?v=' . Framework::$version;
+
+        $relativeCorePath = PathUtility::getPublicResourceWebPath('EXT:h5p/Resources/Public/Lib/h5p-core/');
+
+        foreach (H5PCore::$scripts as $script) {
+            $this->pageRenderer->addJsFooterFile($relativeCorePath . $script, 'text/javascript', false, false, '', true);
+        }
+        foreach (H5PCore::$styles as $style) {
+            $this->pageRenderer->addCssFile($relativeCorePath . $style, 'stylesheet', 'all', '', false, false, '', true);
+        }
 
         $contentSettings = $this->getContentSettings($content);
         $contentSettings['displayOptions'] = [];
-        $contentSettings['displayOptions']['frame'] = (bool)($data['tx_h5p_display_options'] & H5PCore::DISABLE_FRAME);
-        $contentSettings['displayOptions']['export'] = (bool)($data['tx_h5p_display_options'] & H5PCore::DISABLE_DOWNLOAD);
-        $contentSettings['displayOptions']['embed'] = (bool)($data['tx_h5p_display_options'] & H5PCore::DISABLE_EMBED);
-        $contentSettings['displayOptions']['copyright'] = (bool)($data['tx_h5p_display_options'] & H5PCore::DISABLE_COPYRIGHT);
-        $contentSettings['displayOptions']['icon'] = (bool)($data['tx_h5p_display_options'] & H5PCore::DISABLE_ABOUT);
+        $contentSettings['displayOptions']['frame'] = true;
+        $contentSettings['displayOptions']['export'] = false;
+        $contentSettings['displayOptions']['embed'] = false;
+        $contentSettings['displayOptions']['copyright'] = false;
+        $contentSettings['displayOptions']['icon'] = true;
+        $this->pageRenderer->addJsInlineCode(
+            'H5PIntegration contents cid-' . $content->getUid(),
+            'H5PIntegration.contents[\'cid-' . $content->getUid() . '\'] = ' . json_encode($contentSettings) . ';', false, false, true
+        );
 
-        $this->view->assign('queryString', http_build_query($contentSettings['displayOptions']));
+        $this->pageRenderer->addJsInlineCode(
+            'H5PIntegration',
+            'H5PIntegration = ' . json_encode($this->getCoreSettings()) . ';', false, true, true
+        );
+
+        if ($content->getEmbedType() !== 'iframe') {
+            // load JS and CSS requirements
+            $contentLibrary = $content->getLibrary()->toAssocArray();
+
+            // JS and CSS required by all libraries
+            $contentLibraryWithDependencies = $this->h5pCore->loadLibrary($contentLibrary['machineName'], $contentLibrary['majorVersion'],
+                $contentLibrary['minorVersion']);
+            $this->h5pCore->findLibraryDependencies($dependencies, $contentLibraryWithDependencies);
+            if (is_array($dependencies)) {
+                $dependencies = $this->h5pCore->orderDependenciesByWeight($dependencies);
+                foreach ($dependencies as $key => $dependency) {
+                    if (strpos($key, 'preloaded-') !== 0) {
+                        continue;
+                    }
+                    $this->loadJsAndCss($dependency['library']);
+                }
+            }
+
+            // JS and CSS required by the content
+            $contentDependencies = $this->h5pFramework->loadContentDependencies($content->getUid(), 'preloaded');
+            foreach ($contentDependencies as $dependency) {
+                $this->loadJsAndCss($dependency);
+            }
+
+            // JS and CSS required by the main Library of the content
+            $this->loadJsAndCss($contentLibrary);
+        }
 
         $this->view->assign('content', $content);
-        $this->view->assign('contentSettings', $contentSettings);
         return $this->htmlResponse();
     }
 
@@ -280,8 +367,9 @@ class ViewController extends ActionController
      * Get generic h5p settings
      *
      * @return array;
+     * @throws InvalidFileException
      */
-    public function getCoreSettings()
+    public function getCoreSettings(): array
     {
         $absoluteWebPath = PathUtility::getPublicResourceWebPath('EXT:h5p/Resources/Public/Lib/h5p-core/');
 
@@ -316,22 +404,26 @@ class ViewController extends ActionController
             'contents' => []
         ];
 
-        if ($GLOBALS['TSFE']->loginUser) {
-            $user = $this->request->getAttribute('frontend.user')->user;
+        $frontendUser = $this->request->getAttribute('frontend.user');
+
+        if ($frontendUser && !empty($frontendUser->user['uid'])) {
+            $user = $frontendUser->user;
 
             $name = $user['first_name'];
-            if ($user['middle_name']) {
-                $name .= ' ' . $user ['middle_name'];
+            if (!empty($user['middle_name'])) {
+                $name .= ' ' . $user['middle_name'];
             }
-            if ($user['last_name']) {
-                $name .= ' ' . $user ['last_name'];
+            if (!empty($user['last_name'])) {
+                $name .= ' ' . $user['last_name'];
             }
 
             $settings['user'] = [
                 'name' => $name,
                 'mail' => $user['email']
             ];
-            $settings['postUserStatistics'] = $this->h5pFramework->getOption('track_user') && (bool)$user['uid'];
+
+            $settings['postUserStatistics'] =
+                $this->h5pFramework->getOption('track_user') && (bool)$user['uid'];
         }
 
         foreach (H5PCore::$styles as $style) {
@@ -388,7 +480,6 @@ class ViewController extends ActionController
             ]
         ];
 
-        /*
         if ($content->getEmbedType() === 'iframe') {
             $contentLibrary = $content->getLibrary()->toAssocArray();
             $dependencyLibrary = $this->h5pCore->loadLibrary($contentLibrary['machineName'], $contentLibrary['majorVersion'], $contentLibrary['minorVersion']);
@@ -409,7 +500,7 @@ class ViewController extends ActionController
             }
 
             $this->setJsAndCss($contentLibrary, $settings);
-        }*/
+        }
 
         return $settings;
     }

@@ -1,9 +1,33 @@
 <?php
 
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+use TYPO3\CMS\Extbase\Utility\ExtensionUtility;
 
 defined('TYPO3') or die('¯\_(ツ)_/¯');
 
+ExtensionManagementUtility::addTcaSelectItem(
+    'tt_content',
+    'CType',
+    [
+        'LLL:EXT:h5p/Resources/Private/Language/Tca.xlf:h5p.wizard.title',
+        'h5p_view',
+        'h5p-logo',
+        'H5P',
+        'LLL:EXT:h5p/Resources/Private/Language/Tca.xlf:h5p.wizard.description'
+    ]
+);
+
+ExtensionManagementUtility::addTcaSelectItem(
+    'tt_content',
+    'CType',
+    [
+        'LLL:EXT:h5p/Resources/Private/Language/Tca.xlf:h5p.statistics',
+        'h5p_statistics',
+        'h5p-logo',
+        'H5P',
+        'LLL:EXT:h5p/Resources/Private/Language/Tca.xlf:h5p.statistics.description'
+    ]
+);
 
 ExtensionManagementUtility::addTCAcolumns(
     'tt_content',

@@ -3,13 +3,13 @@
 namespace MichielRoos\H5p\Controller;
 
 
+use Exception;
 use InvalidArgumentException;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationExtensionNotConfiguredException;
 use TYPO3\CMS\Core\Configuration\Exception\ExtensionConfigurationPathDoesNotExistException;
 use TYPO3\CMS\Core\Imaging\IconSize;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
-use TYPO3\CMS\Core\Messaging\AbstractMessage;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Imaging\IconFactory;
@@ -40,7 +40,6 @@ use MichielRoos\H5p\Domain\Repository\LibraryRepository;
 use MichielRoos\H5p\Property\TypeConverter\UploadedFileReferenceConverter;
 use TYPO3\CMS\Backend\Routing\UriBuilder as BackendUriBuilder;
 use TYPO3\CMS\Backend\Utility\BackendUtility;
-use TYPO3\CMS\Core\Imaging\Icon;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Resource\FileInterface;
 use TYPO3\CMS\Core\Resource\ResourceFactory;
@@ -69,24 +68,24 @@ class H5pModuleController extends ActionController
     protected int $limit = 20;
 
     /**
-     * @var FileStorage|object
+     * @var FileStorage
      */
-    private $h5pFileStorage;
+    private FileStorage $h5pFileStorage;
 
     /**
-     * @var CoreFactory|object
+     * @var CoreFactory
      */
-    private $h5pCore;
+    private CoreFactory $h5pCore;
 
     /**
-     * @var Framework|object
+     * @var Framework
      */
-    private $h5pFramework;
+    private Framework $h5pFramework;
 
     /**
-     * @var H5PContentValidator|object
+     * @var H5PContentValidator
      */
-    private $h5pContentValidator;
+    private H5PContentValidator $h5pContentValidator;
 
     /**
      * @var string
@@ -94,9 +93,9 @@ class H5pModuleController extends ActionController
     private string $language;
 
     /**
-     * @var H5peditor|object
+     * @var H5peditor
      */
-    private $h5pEditor;
+    private H5peditor $h5pEditor;
 
     private ModuleTemplate $moduleTemplate;
     private int $itemsPerPage = 50;
@@ -766,7 +765,7 @@ class H5pModuleController extends ActionController
      * Get generic h5p settings
      *
      * @return array;
-     * @throws RouteNotFoundException|Exception
+     * @throws RouteNotFoundException|Exception|InvalidFileException
      */
     public function getCoreSettings(): array
     {
@@ -968,8 +967,6 @@ class H5pModuleController extends ActionController
             $this->addFlashMessage('Content element has no H5P library', 'H5P library not found on content', ContextualFeedbackSeverity::ERROR);
             return new ForwardResponse('error');
         }
-
-        $cacheBuster = '?v=' . Framework::$version;
 
         $relativeCorePath = PathUtility::getPublicResourceWebPath('EXT:h5p/Resources/Public/Lib/h5p-core/');
 
