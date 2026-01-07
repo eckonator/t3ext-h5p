@@ -15,5 +15,5 @@
     }
 }
 ```
-4. run `composer patches-reloack`
+4. run `composer patches-relock`
 5. run `composer patches-repatch`
