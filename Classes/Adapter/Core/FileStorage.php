@@ -1,6 +1,7 @@
 <?php
 namespace MichielRoos\H5p\Adapter\Core;
 
+use FilesystemIterator;
 use H5PCore;
 use H5peditorFile;
 use H5PFileStorage;
@@ -13,7 +14,6 @@ use TYPO3\CMS\Core\Resource\Exception\InsufficientFolderWritePermissionsExceptio
 use MichielRoos\H5p\Exception\MethodNotImplementedException;
 use MichielRoos\H5p\Utility\MaintenanceUtility;
 use TYPO3\CMS\Extbase\Persistence\Exception\IllegalObjectTypeException;
-use TYPO3\CMS\Core\Resource\Exception;
 use TYPO3\CMS\Core\Resource\Exception\AbstractFileOperationException;
 use TYPO3\CMS\Core\Resource\Exception\ExistingTargetFileNameException;
 use TYPO3\CMS\Core\Resource\Exception\FileOperationErrorException;
@@ -22,13 +22,13 @@ use TYPO3\CMS\Core\Resource\Exception\InvalidPathException;
 use MichielRoos\H5p\Domain\Model\CachedAsset;
 use MichielRoos\H5p\Domain\Repository\CachedAssetRepository;
 use TYPO3\CMS\Core\Core\Environment;
-use TYPO3\CMS\Core\Resource\DuplicationBehavior;
 use TYPO3\CMS\Core\Resource\Folder;
 use TYPO3\CMS\Core\Resource\ResourceStorage;
 use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Utility\File\ExtendedFileUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
+use TYPO3\CMS\Core\Resource\Enum\DuplicationBehavior;
 
 /**
  * Class FileStorage
@@ -38,17 +38,17 @@ class FileStorage implements H5PFileStorage, SingletonInterface
     /**
      * @var string
      */
-    private $basePath;
+    private string $basePath;
 
     /**
      * @var string
      */
-    private $folderPrefix = 'h5p/';
+    private string $folderPrefix = 'h5p/';
 
     /**
      * @var ResourceStorage
      */
-    private $storage;
+    private ResourceStorage $storage;
 
     /**
      * @var CachedAssetRepository|object
@@ -61,7 +61,7 @@ class FileStorage implements H5PFileStorage, SingletonInterface
     private $persistenceManager;
 
     /**
-     * @var object|ObjectManager
+     * @var object
      */
     private $objectManager;
 
@@ -74,7 +74,6 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      * @throws ExistingTargetFolderException
      * @throws InsufficientFolderAccessPermissionsException
      * @throws InsufficientFolderWritePermissionsException
-     * @throws \TYPO3\CMS\Extbase\Object\Exception
      */
     public function __construct(ResourceStorage $storage, string $path = 'h5p')
     {
@@ -130,7 +129,7 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      *  Library properties
      * @throws ExistingTargetFolderException
      * @throws InsufficientFolderAccessPermissionsException
-     * @throws InsufficientFolderWritePermissionsException
+     * @throws InsufficientFolderWritePermissionsException|ExistingTargetFileNameException
      */
     public function saveLibrary($library): void
     {
@@ -183,7 +182,7 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      *  Content properties
      * @throws ExistingTargetFolderException
      * @throws InsufficientFolderAccessPermissionsException
-     * @throws InsufficientFolderWritePermissionsException
+     * @throws InsufficientFolderWritePermissionsException|ExistingTargetFileNameException
      */
     public function saveContent($source, $content): void
     {
@@ -481,7 +480,6 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      * @param H5peditorFile $file
      * @param int $contentId
      * @return H5peditorFile
-     * @throws Exception
      */
     public function saveFile($file, $contentId): H5peditorFile
     {
@@ -591,9 +589,9 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      * content from the current temporary upload folder to the editor path.
      *
      * @param string $source path to source directory
-     * @param string $contentId Id of content
+     * @param null $contentId Id of content
      *
-     * @return object Object containing h5p json and content json data
+     * @return object|null Object containing h5p json and content json data
      * @throws ExistingTargetFileNameException
      * @throws ExistingTargetFolderException
      * @throws FileOperationErrorException
@@ -601,6 +599,7 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      * @throws InsufficientFolderWritePermissionsException
      * @throws InsufficientUserPermissionsException
      * @throws InvalidPathException
+     * @throws MethodNotImplementedException
      */
     public function moveContentDirectory($source, $contentId = null): ?object
     {
@@ -636,7 +635,7 @@ class FileStorage implements H5PFileStorage, SingletonInterface
         }
 
         /** @var SplFileInfo $fileInfo */
-        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST) as $fileInfo) {
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST) as $fileInfo) {
             $pathName = $fileInfo->getPathname();
             $dir = str_replace($source, '', $pathName);
             $dir = ltrim($dir, '/');
@@ -687,8 +686,7 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      *
      * @param string $file_path
      *
-     * @return string contents
-     * @throws MethodNotImplementedException
+     * @return void contents
      * @throws MethodNotImplementedException
      */
     public function getContent($file_path): void
@@ -704,7 +702,7 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      * @param string $file path + name
      * @param int $contentId
      *
-     * @return string|int File ID or NULL if not found
+     * @return void File ID or NULL if not found
      * @throws MethodNotImplementedException
      */
     public function getContentFile($file, $contentId): void
@@ -746,10 +744,9 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      * Check if the library has a presave.js in the root folder
      *
      * @param string $libraryName
-     * @param string $developmentPath
+     * @param null $developmentPath
      *
-     * @return bool
-     * @throws MethodNotImplementedException
+     * @return void
      * @throws MethodNotImplementedException
      */
     public function hasPresave($libraryName, $developmentPath = null): void
@@ -764,9 +761,9 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      * @param string $machineName
      * @param int $majorVersion
      * @param int $minorVersion
-     * @return string Relative path
+     * @return string|null Relative path
      */
-    public function getUpgradeScript($machineName, $majorVersion, $minorVersion)
+    public function getUpgradeScript($machineName, $majorVersion, $minorVersion): ?string
     {
         $folderPrefix = $this->folderPrefix ?: '';
         $upgradesFilePath = "/{$folderPrefix}libraries/{$machineName}-{$majorVersion}.{$minorVersion}/upgrades.js";
