@@ -1570,4 +1570,9 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
     {
         // Temporäre leere Implementierung
     }
+
+    public function resetHubOrganizationData(): void
+    {
+        // Stub-Implementierung für H5PFrameworkInterface
+    }
 }
