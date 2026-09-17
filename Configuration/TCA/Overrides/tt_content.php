@@ -40,7 +40,7 @@ ExtensionManagementUtility::addTCAcolumns(
                 'rootLevel'     => true,
                 'allowed'       => 'tx_h5p_domain_model_content',
                 'items'         => [
-                    ['', 0]
+                    ['label' => '', 'value' => 0]
                 ],
                 'default'       => 0,
                 'size'          => 1,
@@ -59,11 +59,11 @@ ExtensionManagementUtility::addTCAcolumns(
             'config'  => [
                 'type'    => 'check',
                 'items'   => [
-                    ['label' => 'LLL:EXT:h5p/Resources/Private/Language/Tca.xlf:tt_content.tx_h5p_display_options.I.0'], // 1
-                    ['label' => 'LLL:EXT:h5p/Resources/Private/Language/Tca.xlf:tt_content.tx_h5p_display_options.I.1'], // 2
-                    ['label' => 'LLL:EXT:h5p/Resources/Private/Language/Tca.xlf:tt_content.tx_h5p_display_options.I.2'], // 4
-                    ['label' => 'LLL:EXT:h5p/Resources/Private/Language/Tca.xlf:tt_content.tx_h5p_display_options.I.3'], // 8
-                    ['label' => 'LLL:EXT:h5p/Resources/Private/Language/Tca.xlf:tt_content.tx_h5p_display_options.I.4'], // 16
+                    ['label' => 'LLL:EXT:h5p/Resources/Private/Language/Tca.xlf:tt_content.tx_h5p_display_options.I.0', ''], // 1
+                    ['label' => 'LLL:EXT:h5p/Resources/Private/Language/Tca.xlf:tt_content.tx_h5p_display_options.I.1', ''], // 2
+                    ['label' => 'LLL:EXT:h5p/Resources/Private/Language/Tca.xlf:tt_content.tx_h5p_display_options.I.2', ''], // 4
+                    ['label' => 'LLL:EXT:h5p/Resources/Private/Language/Tca.xlf:tt_content.tx_h5p_display_options.I.3', ''], // 8
+                    ['label' => 'LLL:EXT:h5p/Resources/Private/Language/Tca.xlf:tt_content.tx_h5p_display_options.I.4', ''], // 16
                 ],
                 'cols'    => 2,
                 'default' => H5PCore::DISABLE_FRAME + H5PCore::DISABLE_COPYRIGHT // 1 + 8

@@ -1,0 +1,31 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers" data-namespace-typo3-fluid="true">
+<f:comment>
+    Eigenstaendige Seite fuer den Einbetten-Knopf: Sie wird in einem iframe auf
+    fremden Seiten geladen und darf deshalb KEIN Layout der Website mitbringen -
+    daher bewusst ohne <f:layout>. Den Rahmen liefert die einbettende Seite.
+</f:comment>
+<f:if condition="{contentNotFound}">
+    <f:then>
+        <p>H5P content not found</p>
+    </f:then>
+    <f:else>
+        <f:switch expression="{content.embedType}">
+            <f:case value="div">
+                <div class="h5p-content" data-content-id="{content.uid}"></div>
+            </f:case>
+            <f:case value="iframe">
+                <div class="h5p-iframe-wrapper">
+                    <iframe id="h5p-iframe-{content.uid}"
+                            class="h5p-iframe"
+                            data-content-id="{content.uid}"
+                            style="height:1px"
+                            scrolling="no"
+                            frameborder="0"
+                            src="about:blank">
+                    </iframe>
+                </div>
+            </f:case>
+        </f:switch>
+    </f:else>
+</f:if>
+</html>

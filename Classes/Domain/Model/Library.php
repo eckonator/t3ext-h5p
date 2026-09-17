@@ -402,7 +402,11 @@ class Library extends AbstractEntity
      */
     public function getFolderName(): string
     {
-        return H5PCore::libraryToString($this->toAssocArray(), true);
+        // libraryToString() liefert "H5P.MultiChoice 1.12" (Leerzeichen) und ignoriert
+        // in h5p-core ^1.27 das zweite Argument. Ordner heissen aber mit Bindestrich -
+        // sonst zeigt u.a. der Bibliotheken-Reiter des Moduls auf einen Pfad, den es
+        // nicht gibt (H5pModuleController::librariesAction()).
+        return H5PCore::libraryToFolderName($this->toAssocArray());
     }
 
     /**

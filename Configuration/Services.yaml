@@ -41,3 +41,21 @@ services:
 
   MichielRoos\H5p\Backend\EditorController:
     public: true
+
+  MichielRoos\H5p\Command\GenerateExportsCommand:
+    tags:
+      - name: console.command
+        command: 'h5p:generate-exports'
+        description: 'Erzeugt fehlende .h5p-Exportdateien fuer vorhandene Inhalte.'
+
+  MichielRoos\H5p\Command\FindDuplicateContentCommand:
+    tags:
+      - name: console.command
+        command: 'h5p:find-duplicates'
+        description: 'Listet mehrfach vorhandene H5P-Inhalte samt Verwendung auf (nur lesend).'
+
+  MichielRoos\H5p\Command\CleanupOrphanedFilesCommand:
+    tags:
+      - name: console.command
+        command: 'h5p:cleanup-orphaned-files'
+        description: 'Listet verwaiste H5P-Ordner in fileadmin/h5p auf und entfernt sie auf Wunsch.'

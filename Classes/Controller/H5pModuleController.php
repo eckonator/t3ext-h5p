@@ -14,10 +14,14 @@ use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Core\Imaging\IconFactory;
 use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\UploadedFileInterface;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Pagination\SimplePagination;
 use TYPO3\CMS\Core\Resource\Exception\InvalidFileException;
+use TYPO3\CMS\Core\Database\Connection;
+use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 use TYPO3\CMS\Extbase\Mvc\Exception\StopActionException;
@@ -27,6 +31,8 @@ use TYPO3\CMS\Backend\Routing\Exception\RouteNotFoundException;
 use H5P_Plugin;
 use H5PContentValidator;
 use H5PCore;
+use H5PStorage;
+use H5PValidator;
 use H5peditor;
 use MichielRoos\H5p\Adapter\Core\CoreFactory;
 use MichielRoos\H5p\Adapter\Core\FileStorage;
@@ -154,7 +160,7 @@ class H5pModuleController extends ActionController
         $this->h5pFramework = GeneralUtility::makeInstance(Framework::class);
         $this->h5pFramework->setStorage($storage); // Storage nachträglich setzen
         $this->h5pFileStorage = GeneralUtility::makeInstance(FileStorage::class, $storage);
-        $this->h5pCore = GeneralUtility::makeInstance(CoreFactory::class, $this->h5pFramework, $this->h5pFileStorage, $this->language);
+        $this->h5pCore = GeneralUtility::makeInstance(CoreFactory::class, $this->h5pFramework, $this->h5pFileStorage, '', $this->language);
         $this->h5pContentValidator = GeneralUtility::makeInstance(H5PContentValidator::class, $this->h5pFramework, $this->h5pCore);
         $editorAjax = GeneralUtility::makeInstance(EditorAjax::class);
         $editorStorage = GeneralUtility::makeInstance(EditorStorage::class);
@@ -423,6 +429,7 @@ class H5pModuleController extends ActionController
 
         $this->moduleTemplate->assignMultiple([
             'action'     => 'libraries',
+            'id'         => $this->id,
             'libraries'  => $libraries,
             'paginator'  => $paginator,
             'pagination' => $pagination,
@@ -462,6 +469,15 @@ class H5pModuleController extends ActionController
      */
     public function createAction(): ResponseInterface
     {
+        // Import: Wurde eine .h5p-Datei hochgeladen, ersetzt sie den Editor-Zweig.
+        // Das Formular bietet beides an ("Upload" / "Create"), bisher wertete der
+        // Controller aber nur den Editor aus - eine hochgeladene Datei lief ins
+        // Leere und endete in "Invalid library".
+        $paket = $this->ermittleHochgeladenesPaket();
+        if ($paket !== null) {
+            return $this->importierePaket($paket);
+        }
+
         // Keep track of the old library and params
         $oldLibrary = null;
         $oldParams = null;
@@ -535,6 +551,11 @@ class H5pModuleController extends ActionController
         $content['title'] = $content['metadata']->title;
 
         // Store content dependencies
+        // Muss vor filterParameters() stehen: Ist der Export aktiv, baut H5PExport
+        // daraus die h5p.json und braucht Felder, die dieser Controller bisher nicht
+        // gesetzt hat.
+        $content = $this->ergaenzeExportFelder($content);
+
         $this->h5pCore->filterParameters($content);
 
         $this->addFlashMessage('Content stored successfully.');
@@ -567,6 +588,15 @@ class H5pModuleController extends ActionController
      */
     public function updateAction(): ResponseInterface
     {
+        // Import: Wurde eine .h5p-Datei hochgeladen, ersetzt sie den Editor-Zweig.
+        // Das Formular bietet beides an ("Upload" / "Create"), bisher wertete der
+        // Controller aber nur den Editor aus - eine hochgeladene Datei lief ins
+        // Leere und endete in "Invalid library".
+        $paket = $this->ermittleHochgeladenesPaket();
+        if ($paket !== null) {
+            return $this->importierePaket($paket, (int)($this->request->hasArgument('contentId') ? $this->request->getArgument('contentId') : 0));
+        }
+
         // Content id
         $contentId = null;
         if ($this->request->hasArgument('contentId')) {
@@ -647,6 +677,11 @@ class H5pModuleController extends ActionController
         $content['title'] = $content['metadata']->title;
 
         // Store content dependencies
+        // Muss vor filterParameters() stehen: Ist der Export aktiv, baut H5PExport
+        // daraus die h5p.json und braucht Felder, die dieser Controller bisher nicht
+        // gesetzt hat.
+        $content = $this->ergaenzeExportFelder($content);
+
         $this->h5pCore->filterParameters($content);
 
         $this->addFlashMessage('Content stored successfully.');
@@ -683,8 +718,10 @@ class H5pModuleController extends ActionController
             }
             $this->moduleTemplate->assign('content', $content);
             $parameters = (array)json_decode($content->getFiltered());
-            $displayOptions = $this->h5pCore->getDisplayOptionsForEdit($content->getDisable());
-            $this->moduleTemplate->assign('displayOptions', $displayOptions);
+            $this->moduleTemplate->assign(
+                'displayOptions',
+                $this->bereiteAnzeigeoptionenAuf($this->h5pCore->getDisplayOptionsForEdit($content->getDisable()))
+            );
             $parameters = $this->injectMetadataIntoParameters($parameters, $content);
             $parameters = json_encode($parameters, JSON_THROW_ON_ERROR);
             // Unbreak wrongly encoded parameters (Content.php updateFromContentData())
@@ -1142,6 +1179,441 @@ class H5pModuleController extends ActionController
                 $this->pageRenderer->addCssFile('/fileadmin/h5p/libraries/' . $name . '/' . $css, 'stylesheet', 'all', '', false, false, '', true);
             }
         }
+    }
+
+    /**
+     * Bestaetigungsseite vor dem Loeschen eines Inhalts.
+     *
+     * Bewusst zweistufig statt ein Klick plus JavaScript-Rueckfrage: Das Backend von
+     * TYPO3 13 setzt eine strenge CSP, inline-onclick liefe dort ins Leere - und bei
+     * einer nicht umkehrbaren Aktion ist eine eigene Seite mit allen Angaben ohnehin
+     * die ehrlichere Loesung.
+     */
+    public function deleteContentAction(int $contentId): ResponseInterface
+    {
+        $content = GeneralUtility::makeInstance(ContentRepository::class)->findOneByUid($contentId);
+        if ($content === null) {
+            $this->addFlashMessage('H5P-Inhalt nicht gefunden.', '', ContextualFeedbackSeverity::ERROR);
+            return $this->redirect('index', null, null, ['id' => $this->id]);
+        }
+
+        $this->moduleTemplate->assignMultiple([
+            'action'      => 'deleteContent',
+            'id'          => $this->id,
+            'content'     => $content,
+            'usedOnPages' => $this->findContentElementsUsing($contentId),
+        ]);
+
+        return $this->moduleTemplate->renderResponse('H5pModule/DeleteContent');
+    }
+
+    /**
+     * Loescht einen Inhalt samt Dateien, Abhaengigkeiten und Exportdatei.
+     *
+     * Geht bewusst ueber H5PStorage::deletePackage(), damit Reihenfolge und Umfang
+     * aus dem H5P-Kern kommen und nicht hier nachgebaut werden.
+     */
+    public function deleteContentConfirmAction(int $contentId): ResponseInterface
+    {
+        $content = GeneralUtility::makeInstance(ContentRepository::class)->findOneByUid($contentId);
+        if ($content === null) {
+            $this->addFlashMessage('H5P-Inhalt nicht gefunden.', '', ContextualFeedbackSeverity::ERROR);
+            return $this->redirect('index', null, null, ['id' => $this->id]);
+        }
+
+        $title = $content->getTitle();
+        (new H5PStorage($this->h5pFramework, $this->h5pCore))->deletePackage([
+            'id'   => $contentId,
+            'slug' => $content->getSlug(),
+        ]);
+
+        $this->addFlashMessage(
+            sprintf('H5P-Inhalt "%s" wurde mit allen Dateien geloescht.', $title),
+            '',
+            ContextualFeedbackSeverity::OK
+        );
+
+        return $this->redirect('index', null, null, ['id' => $this->id]);
+    }
+
+    /**
+     * Bestaetigungsseite vor dem Loeschen einer Bibliothek.
+     */
+    public function deleteLibraryAction(int $libraryId): ResponseInterface
+    {
+        $library = GeneralUtility::makeInstance(LibraryRepository::class)->findOneByUid($libraryId);
+        if ($library === null) {
+            $this->addFlashMessage('Bibliothek nicht gefunden.', '', ContextualFeedbackSeverity::ERROR);
+            return $this->redirect('libraries', null, null, ['id' => $this->id]);
+        }
+
+        $usage = $this->getLibraryUsageCounts($libraryId);
+
+        $this->moduleTemplate->assignMultiple([
+            'action'          => 'deleteLibrary',
+            'id'              => $this->id,
+            'library'         => $library,
+            'usedByContent'   => $usage['content'],
+            'usedByLibraries' => $usage['libraries'],
+        ]);
+
+        return $this->moduleTemplate->renderResponse('H5pModule/DeleteLibrary');
+    }
+
+    /**
+     * Loescht eine Bibliothek samt Ordner, Abhaengigkeiten und Uebersetzungen.
+     *
+     * Verweigert die Ausfuehrung, solange die Bibliothek benutzt wird - sonst blieben
+     * Inhalte zurueck, die sich nicht mehr darstellen lassen. Die Pruefung steht hier
+     * und nicht nur im Template, damit auch ein direkt aufgerufener Link nichts
+     * kaputt machen kann.
+     */
+    public function deleteLibraryConfirmAction(int $libraryId): ResponseInterface
+    {
+        $library = GeneralUtility::makeInstance(LibraryRepository::class)->findOneByUid($libraryId);
+        if ($library === null) {
+            $this->addFlashMessage('Bibliothek nicht gefunden.', '', ContextualFeedbackSeverity::ERROR);
+            return $this->redirect('libraries', null, null, ['id' => $this->id]);
+        }
+
+        $usage = $this->getLibraryUsageCounts($libraryId);
+        if ($usage['content'] > 0 || $usage['libraries'] > 0) {
+            $this->addFlashMessage(
+                sprintf(
+                    'Bibliothek "%s" wird noch benutzt (%d Inhalte, %d Bibliotheken) und wurde nicht geloescht.',
+                    $library->getTitle(),
+                    $usage['content'],
+                    $usage['libraries']
+                ),
+                '',
+                ContextualFeedbackSeverity::ERROR
+            );
+            return $this->redirect('libraries', null, null, ['id' => $this->id]);
+        }
+
+        $title = $library->getTitle() . ' ' . $library->getMajorVersion() . '.' . $library->getMinorVersion();
+
+        // Erst die Dateien, dann die Datenbank: andersherum liesse sich der
+        // Ordnername nach dem Loeschen des Datensatzes nicht mehr ermitteln.
+        $this->h5pCore->fs->deleteLibrary([
+            'machineName'  => $library->getMachineName(),
+            'majorVersion' => $library->getMajorVersion(),
+            'minorVersion' => $library->getMinorVersion(),
+        ]);
+        $this->h5pCore->h5pF->deleteLibrary($libraryId);
+
+        $this->addFlashMessage(
+            sprintf('Bibliothek "%s" wurde mit allen Dateien geloescht.', $title),
+            '',
+            ContextualFeedbackSeverity::OK
+        );
+
+        return $this->redirect('libraries', null, null, ['id' => $this->id]);
+    }
+
+    /**
+     * Zaehlt, wodurch eine Bibliothek noch belegt ist.
+     *
+     * @return array{content: int, libraries: int}
+     */
+    private function getLibraryUsageCounts(int $libraryId): array
+    {
+        $connectionPool = GeneralUtility::makeInstance(ConnectionPool::class);
+
+        $contentQuery = $connectionPool->getQueryBuilderForTable('tx_h5p_domain_model_contentdependency');
+        $contentQuery->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(DeletedRestriction::class));
+        $contentCount = (int)$contentQuery
+            ->addSelectLiteral('COUNT(DISTINCT ' . $contentQuery->quoteIdentifier('content') . ')')
+            ->from('tx_h5p_domain_model_contentdependency')
+            ->where($contentQuery->expr()->eq('library', $contentQuery->createNamedParameter($libraryId, Connection::PARAM_INT)))
+            ->executeQuery()
+            ->fetchOne();
+
+        $libraryQuery = $connectionPool->getQueryBuilderForTable('tx_h5p_domain_model_librarydependency');
+        $libraryQuery->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(DeletedRestriction::class));
+        $libraryCount = (int)$libraryQuery
+            ->count('uid')
+            ->from('tx_h5p_domain_model_librarydependency')
+            ->where($libraryQuery->expr()->eq('required_library', $libraryQuery->createNamedParameter($libraryId, Connection::PARAM_INT)))
+            ->executeQuery()
+            ->fetchOne();
+
+        return ['content' => $contentCount, 'libraries' => $libraryCount];
+    }
+
+    /**
+     * Sucht Content-Elemente, die diesen H5P-Inhalt einbinden - damit auf der
+     * Bestaetigungsseite sichtbar ist, was nach dem Loeschen ins Leere zeigt.
+     *
+     * @return list<array{uid: int, pid: int, header: string}>
+     */
+    private function findContentElementsUsing(int $contentId): array
+    {
+        $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
+            ->getQueryBuilderForTable('tt_content');
+        $queryBuilder->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(DeletedRestriction::class));
+
+        return $queryBuilder
+            ->select('uid', 'pid', 'header')
+            ->from('tt_content')
+            ->where(
+                $queryBuilder->expr()->eq(
+                    'tx_h5p_content',
+                    $queryBuilder->createNamedParameter($contentId, Connection::PARAM_INT)
+                )
+            )
+            ->setMaxResults(20)
+            ->executeQuery()
+            ->fetchAllAssociative();
+    }
+
+    /**
+     * Ergaenzt das Content-Array um die Felder, die H5PExport erwartet.
+     *
+     * Dieser Controller baut $content von Hand zusammen, waehrend H5P sonst von
+     * H5PCore::loadContent() ausgeht. Solange der Export abgeschaltet war, fiel das
+     * nicht auf; mit aktivem Export brach createExportFile() reihenweise ab:
+     *
+     *   h5p.classes.php:1856  $content['embedType']          -> Undefined array key
+     *   h5p.classes.php:1862  $content['library']['name']    -> Undefined array key
+     *
+     * Ergaenzt wird deshalb genau die Form, die loadContent() (h5p.classes.php:2220)
+     * liefert. $content['dependencies'] und ['filtered'] setzt filterParameters()
+     * selbst, bevor der Exporter laeuft.
+     */
+    private function ergaenzeExportFelder(array $content): array
+    {
+        $libraryId = (int)($content['library']['libraryId'] ?? 0);
+        $library = $libraryId > 0
+            ? GeneralUtility::makeInstance(LibraryRepository::class)->findOneByUid($libraryId)
+            : null;
+
+        // H5PExport liest den Bibliotheksnamen als 'name', libraryFromString() liefert
+        // ihn aber als 'machineName'.
+        $content['library']['name'] = (string)($content['library']['name']
+            ?? $content['library']['machineName']
+            ?? '');
+
+        if ($library !== null) {
+            $content['library']['embedTypes'] = (string)$library->getEmbedTypes();
+            $content['library']['fullscreen'] = $library->isFullscreen();
+        }
+
+        $content['embedType'] = H5PCore::determineEmbedType(
+            (string)($content['embedType'] ?? 'div'),
+            (string)($content['library']['embedTypes'] ?? '')
+        );
+
+        // Die Metadaten kommen als stdClass aus dem Editor, H5PExport greift aber mit
+        // Array-Syntax darauf zu. Das wirft zwar nicht, liefe aber ins Leere: Lizenz
+        // und Autoren fehlten dann stillschweigend in der h5p.json.
+        if (is_object($content['metadata'] ?? null)) {
+            $content['metadata'] = json_decode(json_encode($content['metadata']), true) ?? [];
+        }
+
+        return $content;
+    }
+
+    /**
+     * Uebersetzt H5Ps Anzeigeoptionen in eine Form, mit der das Template arbeiten kann.
+     *
+     * Zwei Fallen stecken in der Rohform:
+     *
+     * 1. Die Schluessel sind die Konstantenwerte, und ausgerechnet der Download heisst
+     *    intern "export" (H5PCore::DISPLAY_OPTION_DOWNLOAD). Das Template fragte bisher
+     *    displayOptions.download ab - der Haken konnte also nie vorbelegt werden.
+     *
+     * 2. getDisplayOptionsForEdit() laesst einen Schluessel ganz WEG, wenn die globale
+     *    Einstellung die Option nicht dem Autor ueberlaesst (also bei "immer" oder
+     *    "nie anzeigen"). "fehlt" und "aus" sind damit zweierlei, im Template aber
+     *    nicht unterscheidbar.
+     *
+     * Deshalb je Option ein Paar aus "steuerbar" und "aktiv". Ist eine Option nicht
+     * steuerbar, blendet das Template sie aus, statt eine wirkungslose Checkbox zu
+     * zeigen.
+     *
+     * @param array<string, bool> $rohdaten
+     * @return array<string, array{steuerbar: bool, aktiv: bool}>
+     */
+    private function bereiteAnzeigeoptionenAuf(array $rohdaten): array
+    {
+        $zuordnung = [
+            'frame'     => H5PCore::DISPLAY_OPTION_FRAME,
+            'download'  => H5PCore::DISPLAY_OPTION_DOWNLOAD,
+            'embed'     => H5PCore::DISPLAY_OPTION_EMBED,
+            'copyright' => H5PCore::DISPLAY_OPTION_COPYRIGHT,
+        ];
+
+        $aufbereitet = [];
+        foreach ($zuordnung as $name => $schluessel) {
+            $aufbereitet[$name] = [
+                'steuerbar' => array_key_exists($schluessel, $rohdaten),
+                'aktiv'     => (bool)($rohdaten[$schluessel] ?? false),
+            ];
+        }
+
+        return $aufbereitet;
+    }
+
+    /**
+     * Pfad zur hochgeladenen .h5p-Datei, oder null wenn keine hochgeladen wurde.
+     *
+     * Das Feld heisst im Formular h5p_file (siehe New.html / Edit.html). Die Datei
+     * wird an die Stelle verschoben, an der H5PValidator sie erwartet - der Pfad
+     * kommt aus Framework::getUploadedH5pPath().
+     */
+    private function ermittleHochgeladenesPaket(): ?string
+    {
+        $datei = $this->request->getUploadedFiles()['h5p_file'] ?? null;
+        if (!$datei instanceof UploadedFileInterface || $datei->getError() !== UPLOAD_ERR_OK) {
+            return null;
+        }
+        if ($datei->getSize() === 0) {
+            return null;
+        }
+
+        $ziel = $this->h5pFramework->getUploadedH5pPath();
+        $datei->moveTo($ziel);
+
+        return $ziel;
+    }
+
+    /**
+     * Importiert ein hochgeladenes .h5p-Paket.
+     *
+     * Geht ueber die beiden Kern-Klassen, damit Pruefung und Speicherung dieselbe
+     * Logik nutzen wie in jeder anderen H5P-Plattform:
+     *
+     *   H5PValidator::isValidPackage()  entpackt, prueft Struktur und Dateitypen
+     *   H5PStorage::savePackage()       legt Bibliotheken und Inhalt an
+     *
+     * @param string $paketPfad Pfad zur hochgeladenen Datei
+     * @param int $contentId Vorhandenen Inhalt ersetzen, 0 fuer einen neuen
+     */
+    private function importierePaket(string $paketPfad, int $contentId = 0): ResponseInterface
+    {
+        $validator = GeneralUtility::makeInstance(H5PValidator::class, $this->h5pFramework, $this->h5pCore);
+
+        if (!$validator->isValidPackage()) {
+            // Framework::setErrorMessage() legt Objekte mit code und message ab,
+            // keine Zeichenketten - ein (string)-Cast darauf ist ein Fatal.
+            foreach ((array)$this->h5pFramework->getMessages('error') as $meldung) {
+                $text = is_object($meldung) ? (string)($meldung->message ?? '') : (string)$meldung;
+                if ($text !== '') {
+                    $this->addFlashMessage($text, '', ContextualFeedbackSeverity::ERROR);
+                }
+            }
+            @unlink($paketPfad);
+            return new ForwardResponse('new');
+        }
+
+        // Braucht das Paket Bibliotheken, die noch fehlen, muss der Benutzer sie
+        // installieren duerfen - das entscheidet Framework::hasPermission().
+        if (!$this->h5pCore->mayUpdateLibraries() && $this->paketBrauchtNeueBibliotheken()) {
+            $this->addFlashMessage(
+                'Dieses Paket enthält Inhaltstypen, die hier noch nicht installiert sind. '
+                . 'Das Installieren von Bibliotheken ist Administratoren vorbehalten.',
+                '',
+                ContextualFeedbackSeverity::ERROR
+            );
+            @unlink($paketPfad);
+            return new ForwardResponse('new');
+        }
+
+        // Die Metadaten stehen in der h5p.json des Pakets; H5PValidator hat sie beim
+        // Pruefen nach mainJsonData gelegt. savePackage() selbst setzt sie NICHT,
+        // reicht ein uebergebenes Array aber durch - sonst fehlten Titel und Lizenz.
+        $vorgabe = ['metadata' => (object)((array)($this->h5pCore->mainJsonData ?? []))];
+        if ($contentId > 0) {
+            $vorgabe['id'] = $contentId;
+        }
+
+        $storage = GeneralUtility::makeInstance(H5PStorage::class, $this->h5pFramework, $this->h5pCore);
+        $storage->savePackage($vorgabe);
+
+        $neueId = (int)($storage->contentId ?: $contentId);
+        @unlink($paketPfad);
+
+        // savePackage() legt Inhalt und Dateien an, baut aber KEINE Abhaengigkeiten:
+        // die entstehen erst in filterParameters(), und das ruft beim Import niemand.
+        // Ohne sie laedt der Inhalt im Frontend seine Bibliotheken nicht.
+        // filterParameters() schreibt nebenbei auch Slug und gefilterte Parameter und
+        // erzeugt - falls eingeschaltet - gleich die Exportdatei.
+        if ($neueId > 0) {
+            $this->baueAbhaengigkeitenAuf($neueId);
+        }
+
+        if ($neueId <= 0) {
+            $this->addFlashMessage('Das Paket konnte nicht gespeichert werden.', '', ContextualFeedbackSeverity::ERROR);
+            return new ForwardResponse('new');
+        }
+
+        $this->addFlashMessage(
+            $contentId > 0
+                ? 'Inhalt wurde aus der hochgeladenen Datei ersetzt.'
+                : 'Inhalt wurde aus der hochgeladenen Datei angelegt.',
+            '',
+            ContextualFeedbackSeverity::OK
+        );
+
+        return (new ForwardResponse('show'))
+            ->withControllerName('H5pModule')
+            ->withExtensionName('h5p')
+            ->withArguments(['contentId' => $neueId]);
+    }
+
+    /**
+     * Laesst H5P die Abhaengigkeiten eines frisch importierten Inhalts aufbauen.
+     */
+    private function baueAbhaengigkeitenAuf(int $contentId): void
+    {
+        $content = GeneralUtility::makeInstance(ContentRepository::class)->findOneByUid($contentId);
+        if (!$content instanceof Content) {
+            return;
+        }
+
+        $library = $content->getLibrary();
+        if (!$library instanceof Library) {
+            return;
+        }
+
+        $daten = [
+            'id'       => $contentId,
+            'slug'     => $content->getSlug(),
+            'filtered' => '',
+            'params'   => $content->getParameters(),
+            'title'    => $content->getTitle(),
+            'library'  => [
+                'libraryId'    => $library->getUid(),
+                'machineName'  => $library->getMachineName(),
+                'majorVersion' => $library->getMajorVersion(),
+                'minorVersion' => $library->getMinorVersion(),
+            ],
+        ];
+        $daten = $this->ergaenzeExportFelder($daten);
+
+        $this->h5pCore->filterParameters($daten);
+    }
+
+    /**
+     * Enthaelt das gerade gepruefte Paket Bibliotheken, die noch nicht installiert sind?
+     *
+     * H5PValidator legt die gefundenen Bibliotheken in H5PCore::$librariesJsonData ab.
+     */
+    private function paketBrauchtNeueBibliotheken(): bool
+    {
+        foreach ((array)($this->h5pCore->librariesJsonData ?? []) as $bibliothek) {
+            $vorhanden = $this->h5pFramework->getLibraryId(
+                $bibliothek['machineName'] ?? '',
+                $bibliothek['majorVersion'] ?? null,
+                $bibliothek['minorVersion'] ?? null
+            );
+            if (!$vorhanden) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -33,9 +33,14 @@
                         </div>
                         <div class="postbox h5p-sidebar">
                             <h2>Actions</h2>
-                            <div id="minor-publishing" style="display:none">
-                                <label><input type="radio" name="action" value="upload"/>Upload</label>
-                                <label><input type="radio" name="action" value="create"/>Create</label>
+                            <f:comment>
+                                Frueher stand hier style="display:none". editor.js waehlt beim
+                                Laden automatisch "create" - damit gab es keinen Weg zum
+                                Dateifeld, und der Import war unerreichbar.
+                            </f:comment>
+                            <div id="minor-publishing" class="h5p-action-bar-settings h5p-panel">
+                                <label><input type="radio" name="h5pAction" value="upload"/> Aus .h5p-Datei hochladen</label>
+                                <label><input type="radio" name="h5pAction" value="create"/> Im Editor erstellen</label>
                                 <f:form.hidden name="library" id="tx_h5p_web_h5pmanager_library" value="{library}"/>
                                 <f:form.hidden name="parameters" id="tx_h5p_web_h5pmanager_parameters" value="{parameters}"/>
                             </div>

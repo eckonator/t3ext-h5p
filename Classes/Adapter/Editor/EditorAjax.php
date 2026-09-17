@@ -4,6 +4,7 @@ namespace MichielRoos\H5p\Adapter\Editor;
 
 use H5PEditorAjaxInterface;
 use MichielRoos\H5p\Domain\Model\Library;
+use MichielRoos\H5p\Domain\Model\LibraryTranslation;
 use MichielRoos\H5p\Domain\Repository\ContentTypeCacheEntryRepository;
 use MichielRoos\H5p\Domain\Repository\LibraryRepository;
 use MichielRoos\H5p\Domain\Repository\LibraryTranslationRepository;
@@ -120,13 +121,61 @@ class EditorAjax implements H5PEditorAjaxInterface
     /**
      * Get translations for a language for a list of libraries
      *
+     * Sammel-Endpunkt des Editors: Beim Umschalten der Inhaltssprache fragt
+     * h5peditor-form.js alle noch nicht zwischengespeicherten Bibliotheken auf
+     * einmal ab (Endpunkt "translations").
+     *
+     * Erwartetes Rueckgabeformat, abgeleitet aus dem Konsumenten
+     * vendor/h5p/h5p-editor/scripts/h5peditor-form.js:
+     *
+     *     for (let lib in res.data) {
+     *         ns.libraryCache[lib].translation[lang] = JSON.parse(res.data[lib]).semantics;
+     *     }
+     *
+     * Daraus folgt:
+     * - Der Schluessel muss exakt der hereingereichte Uber-Name sein, sonst
+     *   findet das JS seinen libraryCache-Eintrag nicht.
+     * - Der Wert ist der ROHE JSON-String der Sprachdatei, nicht dekodiert -
+     *   das JSON.parse() macht der Editor selbst.
+     * - Bibliotheken ohne Uebersetzung werden weggelassen statt mit null
+     *   geliefert, sonst liefe JSON.parse(null) auf der Gegenseite auf.
+     *
      * @param array $libraries An array of libraries, in the form "<machineName> <majorVersion>.<minorVersion>
      * @param string $language_code
      * @return array
      */
     public function getTranslations($libraries, $language_code)
     {
-        // TODO: Implement getTranslations() method.
-        return [];
+        $translations = [];
+
+        foreach ((array)$libraries as $libraryString) {
+            $libraryString = (string)$libraryString;
+
+            if (!preg_match('/^(\S+)\s+(\d+)\.(\d+)$/', trim($libraryString), $matches)) {
+                continue;
+            }
+
+            $library = $this->libraryRepository->findOneByMachinenameMajorVersionAndMinorVersion(
+                $matches[1],
+                (int)$matches[2],
+                (int)$matches[3]
+            );
+            if (!$library instanceof Library) {
+                continue;
+            }
+
+            $translation = $this->libraryTranslationRepository->findOneByLibraryAndLanguage(
+                $library,
+                $language_code
+            );
+            if (!$translation instanceof LibraryTranslation) {
+                continue;
+            }
+
+            // Schluessel bewusst unveraendert uebernehmen (siehe Docblock).
+            $translations[$libraryString] = $translation->getTranslation();
+        }
+
+        return $translations;
     }
 }

@@ -129,6 +129,15 @@ class EditorController extends ActionController implements SingletonInterface
                 $this->h5pAjaxEditor->action(H5PEditorEndpoints::LIBRARY_UPLOAD, $token, $uploadPath, $contentId);
                 exit;
                 break;
+            case H5PEditorEndpoints::TRANSLATIONS:
+                // Sammel-Endpunkt fuer den Sprachumschalter im Editor. Die Liste der
+                // Bibliotheken kommt im POST-Body ($_POST['libraries']), Core liest sie
+                // in H5PEditorAjax::action() selbst aus; hier wird nur die Sprache
+                // durchgereicht. Siehe EditorAjax::getTranslations().
+                $languageCode = $parameters['language'] ?? $this->language;
+                $this->h5pAjaxEditor->action(H5PEditorEndpoints::TRANSLATIONS, $languageCode);
+                exit;
+                break;
             case H5PEditorEndpoints::FILTER:
                 $token             = $parameters['token'] ?? 'dummy';
                 $libraryParameters = $this->request->getParsedBody()['libraryParameters'];

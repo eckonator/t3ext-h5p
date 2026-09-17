@@ -5,6 +5,7 @@ namespace MichielRoos\H5p\Adapter\Core;
 use Doctrine\DBAL\DBALException;
 use GuzzleHttp\Exception\GuzzleException;
 use H5PCore;
+use H5PPermission;
 use H5PFrameworkInterface;
 use MichielRoos\H5p\Domain\Model\CachedAsset;
 use MichielRoos\H5p\Domain\Model\ConfigSetting;
@@ -27,6 +28,8 @@ use MichielRoos\H5p\Exception\MethodNotImplementedException;
 use MichielRoos\H5p\Utility\MaintenanceUtility;
 use PDO;
 use stdClass;
+use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
@@ -66,7 +69,7 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
     /**
      * @var H5PCore|null
      */
-    protected ?H5PCore $h5pCore;
+    protected ?H5PCore $h5pCore = null;
 
     /**
      * @var PersistenceManager
@@ -79,7 +82,7 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
      *
      * @var string
      */
-    protected string $uploadedH5pFolderPath;
+    protected string $uploadedH5pFolderPath = '';
 
     /**
      * Path to a temporary H5P file.
@@ -87,7 +90,7 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
      *
      * @var string
      */
-    protected string $uploadedH5pPath;
+    protected string $uploadedH5pPath = '';
 
     /**
      * @var array
@@ -142,7 +145,7 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
     /**
      * @var ResourceStorage|null
      */
-    private ?ResourceStorage $storage;
+    private ?ResourceStorage $storage = null;
 
     /**
      * Setzt den Storage nachträglich.
@@ -287,8 +290,24 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
      */
     public function setLibraryTutorialUrl($machineName, $tutorialUrl): void
     {
-        // TODO: Implement setLibraryTutorialUrl() method.
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
+        // Gilt fuer alle installierten Versionen dieses machineName: H5P pflegt die
+        // Tutorial-URL pro Inhaltstyp, nicht pro Version.
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('tx_h5p_domain_model_library');
+
+        $queryBuilder
+            ->update('tx_h5p_domain_model_library')
+            ->set('tutorial_url', (string)$tutorialUrl)
+            ->where(
+                $queryBuilder->expr()->eq(
+                    'machine_name',
+                    $queryBuilder->createNamedParameter((string)$machineName, Connection::PARAM_STR)
+                ),
+                $queryBuilder->expr()->eq(
+                    'deleted',
+                    $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)
+                )
+            )
+            ->executeStatement();
     }
 
     /**
@@ -396,7 +415,10 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
     public function getUploadedH5pFolderPath(): string
     {
         if (!$this->uploadedH5pFolderPath) {
+            // getTmpPath() liefert bewusst nur einen freien Pfad. Hier wird ein
+            // echtes Verzeichnis gebraucht, in das H5PValidator das Paket entpackt.
             $this->uploadedH5pFolderPath = $this->getInjectedH5PCore()->fs->getTmpPath();
+            GeneralUtility::mkdir_deep($this->uploadedH5pFolderPath);
         }
         return $this->uploadedH5pFolderPath;
     }
@@ -416,12 +438,12 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
             $h5pFramework = GeneralUtility::makeInstance(Framework::class);
             $h5pFramework->setStorage($storage); // Storage nachträglich setzen
 
-            // FileStorage erstellen ohne Argumente, Storage ggf. ebenfalls per Setter setzen
-            $h5pFileStorage = GeneralUtility::makeInstance(FileStorage::class);
-            $h5pFileStorage->setStorage($storage);
+            // FileStorage verlangt den Storage im Konstruktor und hat – anders als
+            // Framework – keinen setStorage()-Setter.
+            $h5pFileStorage = GeneralUtility::makeInstance(FileStorage::class, $storage);
 
             // H5P Core mit Framework und FileStorage erstellen
-            $this->h5pCore = GeneralUtility::makeInstance(CoreFactory::class, $h5pFramework, $h5pFileStorage, $language);
+            $this->h5pCore = GeneralUtility::makeInstance(CoreFactory::class, $h5pFramework, $h5pFileStorage, '', $language);
         }
 
         return $this->h5pCore;
@@ -783,8 +805,16 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
      */
     public function resetContentUserData($contentId): void
     {
-        // TODO: Implement resetContentUserData() method.
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
+        // Bewusster No-Op, kein vergessener Stub.
+        //
+        // H5P meint hiermit content_user_data, also den Zwischenstand eines Nutzers in
+        // einem Inhalt ("resume"). Eine solche Tabelle gibt es in dieser Extension nicht.
+        // tx_h5p_domain_model_contentresult ist fachlich etwas anderes: dort stehen
+        // abgeschlossene Ergebnisse (score, maxScore, finished). Die hier zu loeschen
+        // waere Datenverlust ohne Auftrag.
+        //
+        // Sollte spaeter eine ContentUserData-Tabelle dazukommen, gehoert die
+        // Implementierung hierher.
     }
 
     /**
@@ -868,8 +898,40 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
      */
     public function deleteContentData($contentId): void
     {
-        // TODO: Implement deleteContentData() method.
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
+        $contentId = (int)$contentId;
+        if ($contentId <= 0) {
+            return;
+        }
+
+        // Erst die Abhaengigkeiten, dann der Inhalt: andersherum bliebe bei einem
+        // Abbruch eine Menge Waisen in contentdependency zurueck.
+        //
+        // Bewusst NICHT ueber deleteLibraryUsage(): das geht ueber das Extbase-
+        // Repository und loescht damit nur weich (deleted=1). Fuer den Speicher-Pfad
+        // ist das richtig, hier soll der Inhalt aber wirklich verschwinden - sonst
+        // bliebe zu einem hart geloeschten Inhalt eine Spur weich geloeschter
+        // Abhaengigkeiten zurueck.
+        $dependencies = $this->connectionPool->getQueryBuilderForTable('tx_h5p_domain_model_contentdependency');
+        $dependencies
+            ->delete('tx_h5p_domain_model_contentdependency')
+            ->where(
+                $dependencies->expr()->eq(
+                    'content',
+                    $dependencies->createNamedParameter($contentId, Connection::PARAM_INT)
+                )
+            )
+            ->executeStatement();
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('tx_h5p_domain_model_content');
+        $queryBuilder
+            ->delete('tx_h5p_domain_model_content')
+            ->where(
+                $queryBuilder->expr()->eq(
+                    'uid',
+                    $queryBuilder->createNamedParameter($contentId, Connection::PARAM_INT)
+                )
+            )
+            ->executeStatement();
     }
 
     /**
@@ -1116,8 +1178,60 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
      */
     public function deleteLibrary($library): void
     {
-        // TODO: Implement deleteLibrary() method.
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
+        // H5PCore::deleteLibrary() reicht mal ein Objekt, mal eine uid durch -
+        // beides abfangen statt sich auf eine Form zu verlassen.
+        if (is_object($library)) {
+            $libraryId = (int)($library->libraryId ?? $library->id ?? 0);
+        } elseif (is_array($library)) {
+            $libraryId = (int)($library['libraryId'] ?? $library['id'] ?? 0);
+        } else {
+            $libraryId = (int)$library;
+        }
+
+        if ($libraryId <= 0) {
+            return;
+        }
+
+        // Abhaengigkeiten in BEIDE Richtungen: die Bibliothek als Traeger (library)
+        // und als von anderen benoetigte (required_library).
+        $dependencies = $this->connectionPool->getQueryBuilderForTable('tx_h5p_domain_model_librarydependency');
+        $dependencies
+            ->delete('tx_h5p_domain_model_librarydependency')
+            ->where(
+                $dependencies->expr()->or(
+                    $dependencies->expr()->eq(
+                        'library',
+                        $dependencies->createNamedParameter($libraryId, Connection::PARAM_INT)
+                    ),
+                    $dependencies->expr()->eq(
+                        'required_library',
+                        $dependencies->createNamedParameter($libraryId, Connection::PARAM_INT)
+                    )
+                )
+            )
+            ->executeStatement();
+
+        $translations = $this->connectionPool->getQueryBuilderForTable('tx_h5p_domain_model_librarytranslation');
+        $translations
+            ->delete('tx_h5p_domain_model_librarytranslation')
+            ->where(
+                $translations->expr()->eq(
+                    'library',
+                    $translations->createNamedParameter($libraryId, Connection::PARAM_INT)
+                )
+            )
+            ->executeStatement();
+
+        $libraries = $this->connectionPool->getQueryBuilderForTable('tx_h5p_domain_model_library');
+        $libraries
+            ->delete('tx_h5p_domain_model_library')
+            ->where(
+                $libraries->expr()->eq(
+                    'uid',
+                    $libraries->createNamedParameter($libraryId, Connection::PARAM_INT)
+                )
+            )
+            ->executeStatement();
     }
 
     /**
@@ -1206,14 +1320,42 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
      *   Whatever has been stored as the setting
      * @throws \TYPO3\CMS\Extbase\Object\Exception
      */
+    /**
+     * Welche H5P-Optionen aus der Extension-Konfiguration bedient werden, wenn in
+     * tx_h5p_domain_model_configsetting keine Zeile dafuer steht.
+     *
+     * Beide steuern, ob der jeweilige Button ueberhaupt angeboten wird und ob die
+     * Redaktion das pro Inhalt entscheiden darf - siehe H5PDisplayOptionBehaviour.
+     */
+    private const OPTION_AUS_EXTENSION_KONFIGURATION = [
+        H5PCore::DISPLAY_OPTION_DOWNLOAD => 'displayOptionDownload',
+        H5PCore::DISPLAY_OPTION_EMBED    => 'displayOptionEmbed',
+    ];
+
     public function getOption($name, $default = null)
     {
-        $value   = $default;
         $setting = $this->configSettingRepository->findOneByConfigKey($name);
         if ($setting instanceof ConfigSetting) {
-            $value = $setting->getConfigValue();
+            return $setting->getConfigValue();
         }
-        return $value;
+
+        // Ohne Datenbankzeile greift die Extension-Konfiguration. Vorher fiel hier
+        // stumm der Vorgabewert des Aufrufers durch (ALWAYS_SHOW), womit H5P die
+        // Checkboxen im Backend bewusst ignorierte - sie blieben immer ungehakt.
+        $konfigurationsSchluessel = self::OPTION_AUS_EXTENSION_KONFIGURATION[$name] ?? null;
+        if ($konfigurationsSchluessel !== null) {
+            try {
+                $wert = GeneralUtility::makeInstance(ExtensionConfiguration::class)
+                    ->get('h5p', $konfigurationsSchluessel);
+                if ($wert !== null && $wert !== '') {
+                    return (int)$wert;
+                }
+            } catch (\Throwable) {
+                // Nicht konfiguriert: Vorgabewert des Aufrufers verwenden.
+            }
+        }
+
+        return $default;
     }
 
     /**
@@ -1349,14 +1491,36 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
 
     /**
      * Aggregate the current number of H5P authors
+     *
+     * Gezaehlt wird ueber `user_id` und nicht ueber das Feld `author`: letzteres ist
+     * ein Freitext aus den H5P-Metadaten und als Zaehlbasis unbrauchbar.
+     *
+     * Der Filter `user_id > 0` ist Absicht und darf nicht entfernt werden. Die
+     * Extension setzt `user_id` derzeit nirgends, das Feld steht bei allen Inhalten
+     * auf 0. Ohne den Filter kaeme COUNT(DISTINCT user_id) = 1 heraus und wuerde
+     * "niemand" als einen Autor zaehlen. 0 ist hier die richtige Antwort, bis das
+     * Feld tatsaechlich befuellt wird.
+     *
      * @return int
-     * @throws MethodNotImplementedException
-     * @throws MethodNotImplementedException
      */
-    public function getNumAuthors(): void
+    public function getNumAuthors(): int
     {
-        // TODO: Implement getNumAuthors() method.
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('tx_h5p_domain_model_content');
+        $queryBuilder->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(DeletedRestriction::class));
+
+        $count = $queryBuilder
+            ->addSelectLiteral('COUNT(DISTINCT ' . $queryBuilder->quoteIdentifier('user_id') . ')')
+            ->from('tx_h5p_domain_model_content')
+            ->where(
+                $queryBuilder->expr()->gt(
+                    'user_id',
+                    $queryBuilder->createNamedParameter(0, Connection::PARAM_INT)
+                )
+            )
+            ->executeQuery()
+            ->fetchOne();
+
+        return (int)$count;
     }
 
     /**
@@ -1416,10 +1580,32 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
      * @throws MethodNotImplementedException
      * @throws MethodNotImplementedException
      */
-    public function deleteCachedAssets($library_id): void
+    /**
+     * Wird von Core so benutzt (h5p.classes.php:1668):
+     *
+     *     $removedKeys = $this->h5pF->deleteCachedAssets($library['libraryId']);
+     *     $this->h5pC->fs->deleteCachedAssets($removedKeys);
+     *
+     * Der Rueckgabewert MUSS daher ein Array von Hash-Schluesseln sein - vorher war
+     * die Methode ": void" und lieferte null an den Dateispeicher weiter.
+     *
+     * Eine gezielte Auswahl nach Bibliothek ist in diesem Schema nicht moeglich:
+     * CachedAsset deklariert zwar ein ObjectStorage $libraries, aber es gibt weder
+     * eine MM-Tabelle noch eine Spalte dafuer - saveCachedAssets() kann die Relation
+     * gar nicht persistieren. Deshalb wird hier nichts geloescht und ein leeres Array
+     * zurueckgegeben, statt auf Verdacht den ganzen Cache zu leeren.
+     *
+     * Praktisch ist das folgenlos: Die Asset-Aggregation ist abgeschaltet
+     * (H5PCore::$aggregateAssets = FALSE), die Tabelle ist leer, und
+     * FileStorage::cacheAssets() ist portierter Flow-Code (FLOW_PATH_WEB,
+     * resourceManager), der unter TYPO3 ohnehin nicht laufen wuerde.
+     *
+     * @param int $library_id
+     * @return array Hash-Schluessel der entfernten Assets
+     */
+    public function deleteCachedAssets($library_id): array
     {
-        // TODO: Implement deleteCachedAssets() method.
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
+        return [];
     }
 
     /**
@@ -1451,8 +1637,13 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
      */
     public function afterExportCreated($content, $filename): void
     {
-        // TODO: Implement afterExportCreated() method.
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
+        // Hook, den Core nach erfolgreichem Erzeugen des .h5p aufruft
+        // (h5p.classes.php:1964). Plattformen nutzen ihn, um z.B. eine CDN-Kopie
+        // anzustossen. Hier gibt es nichts zu tun: die Datei liegt bereits im
+        // exports-Ordner und der Dateiname ergibt sich reproduzierbar aus
+        // Slug und Inhalts-Id.
+        //
+        // Bewusst leer, kein vergessener Stub.
     }
 
     /**
@@ -1465,8 +1656,32 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
      */
     public function hasPermission($permission, $id = null): bool
     {
-        return true;
-        // TODO: Implement hasPermission() method.
+        return match ((int)$permission) {
+            // Diese drei veraendern die Installation: Sie installieren oder
+            // aktualisieren Bibliotheken, also fremden JavaScript-Code. Das bleibt
+            // Administratoren vorbehalten.
+            H5PPermission::UPDATE_LIBRARIES,
+            H5PPermission::INSTALL_RECOMMENDED,
+            H5PPermission::CREATE_RESTRICTED => $this->istBackendAdministrator(),
+
+            // DOWNLOAD_H5P, EMBED_H5P und COPY_H5P steuern nur, ob ein Knopf am
+            // Inhalt erscheint. Das entscheidet die Redaktion pro Inhalt, dafuer
+            // braucht es keine Rechtepruefung.
+            default => true,
+        };
+    }
+
+    /**
+     * Ist ein Backend-Administrator angemeldet?
+     *
+     * Im Frontend gibt es keinen BE_USER - dort liefert das false, was fuer die
+     * installationsveraendernden Rechte genau richtig ist.
+     */
+    private function istBackendAdministrator(): bool
+    {
+        $benutzer = $GLOBALS['BE_USER'] ?? null;
+
+        return $benutzer instanceof BackendUserAuthentication && $benutzer->isAdmin();
     }
 
     /**
@@ -1515,16 +1730,60 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
     /**
      * Checks if the given library has a higher version.
      *
+     * Gefragt wird: Ist lokal eine Bibliothek desselben machineName in einer hoeheren
+     * Version installiert? Die uebergebene Version muss dabei selbst NICHT installiert
+     * sein - H5P ruft die Methode beim Hochladen eines Pakets mit der dort verlangten
+     * Version auf (h5p.classes.php:1068), um zwischen "Hauptbibliothek fehlt" und
+     * "es gibt bereits eine neuere Version" unterscheiden zu koennen. Deshalb wird
+     * direkt ueber die Versionsnummern gesucht und nicht ueber einen Treffer der
+     * exakten Version.
+     *
      * @param array $library
      *
-     * @return boolean
-     * @throws MethodNotImplementedException
-     * @throws MethodNotImplementedException
+     * @return bool
      */
-    public function libraryHasUpgrade($library): void
+    public function libraryHasUpgrade($library): bool
     {
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
-        // TODO: Implement libraryHasUpgrade() method.
+        $machineName = (string)($library['machineName'] ?? '');
+        if ($machineName === '') {
+            return false;
+        }
+
+        $majorVersion = (int)($library['majorVersion'] ?? 0);
+        $minorVersion = (int)($library['minorVersion'] ?? 0);
+
+        $queryBuilder = $this->connectionPool->getQueryBuilderForTable('tx_h5p_domain_model_library');
+        $queryBuilder->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(DeletedRestriction::class));
+
+        $count = $queryBuilder
+            ->count('uid')
+            ->from('tx_h5p_domain_model_library')
+            ->where(
+                $queryBuilder->expr()->eq(
+                    'machine_name',
+                    $queryBuilder->createNamedParameter($machineName, Connection::PARAM_STR)
+                ),
+                $queryBuilder->expr()->or(
+                    $queryBuilder->expr()->gt(
+                        'major_version',
+                        $queryBuilder->createNamedParameter($majorVersion, Connection::PARAM_INT)
+                    ),
+                    $queryBuilder->expr()->and(
+                        $queryBuilder->expr()->eq(
+                            'major_version',
+                            $queryBuilder->createNamedParameter($majorVersion, Connection::PARAM_INT)
+                        ),
+                        $queryBuilder->expr()->gt(
+                            'minor_version',
+                            $queryBuilder->createNamedParameter($minorVersion, Connection::PARAM_INT)
+                        )
+                    )
+                )
+            )
+            ->executeQuery()
+            ->fetchOne();
+
+        return (int)$count > 0;
     }
 
     /**
@@ -1573,6 +1832,6 @@ class Framework implements H5PFrameworkInterface, SingletonInterface
 
     public function resetHubOrganizationData(): void
     {
-        // Stub-Implementierung für H5PFrameworkInterface
+        // Temporäre leere Implementierung
     }
 }

@@ -22,13 +22,13 @@ use TYPO3\CMS\Core\Resource\Exception\InvalidPathException;
 use MichielRoos\H5p\Domain\Model\CachedAsset;
 use MichielRoos\H5p\Domain\Repository\CachedAssetRepository;
 use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Resource\Enum\DuplicationBehavior;
 use TYPO3\CMS\Core\Resource\Folder;
 use TYPO3\CMS\Core\Resource\ResourceStorage;
 use TYPO3\CMS\Core\SingletonInterface;
 use TYPO3\CMS\Core\Utility\File\ExtendedFileUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Persistence\Generic\PersistenceManager;
-use TYPO3\CMS\Core\Resource\Enum\DuplicationBehavior;
 
 /**
  * Class FileStorage
@@ -123,6 +123,47 @@ class FileStorage implements H5PFileStorage, SingletonInterface
     }
 
     /**
+     * Kopiert einen FAL-Ordner rekursiv ins lokale Dateisystem.
+     *
+     * Wird fuer den Export gebraucht: H5PExport baut das .h5p-Archiv aus einem
+     * gewoehnlichen Verzeichnis, waehrend die Dateien hier in FAL liegen.
+     * getForLocalProcessing(false) liefert bei lokalem Treiber den echten Pfad und
+     * kopiert nur dann, wenn es sein muss - wichtig bei grossen Mediendateien.
+     */
+    private function copyFolderToLocal(Folder $folder, string $targetDirectory): void
+    {
+        GeneralUtility::mkdir_deep($targetDirectory);
+
+        foreach ($folder->getFiles() as $file) {
+            $source = $file->getForLocalProcessing(false);
+            if ($source !== '' && is_file($source)) {
+                copy($source, rtrim($targetDirectory, '/') . '/' . $file->getName());
+            }
+        }
+
+        foreach ($folder->getSubfolders() as $subFolder) {
+            $this->copyFolderToLocal($subFolder, rtrim($targetDirectory, '/') . '/' . $subFolder->getName());
+        }
+    }
+
+    /**
+     * Ordner unterhalb des h5p-Wurzelordners aufloesen, oder null wenn es ihn nicht gibt.
+     * Buendelt das Muster aus saveContent()/saveLibrary() an einer Stelle.
+     */
+    private function resolveFolder(string $relativePath, string $name): ?Folder
+    {
+        $rootLevelFolder = $this->getRootLevelFolder();
+        $path = $this->folderPrefix ? $this->folderPrefix . $relativePath : $relativePath;
+
+        $folder = GeneralUtility::makeInstance(Folder::class, $this->storage, $path, $name);
+        if (!$this->storage->hasFolderInFolder($folder->getIdentifier(), $rootLevelFolder)) {
+            return null;
+        }
+
+        return $this->storage->getFolderInFolder($folder->getIdentifier(), $rootLevelFolder);
+    }
+
+    /**
      * Store the library folder.
      *
      * @param array $library
@@ -133,7 +174,9 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      */
     public function saveLibrary($library): void
     {
-        $name = H5PCore::libraryToString($library, true);
+        // libraryToString() liefert "Name 1.12" (Leerzeichen); Ordner heissen
+        // "Name-1.12". Das zweite Argument wird von h5p-core ^1.27 ignoriert.
+        $name = H5PCore::libraryToFolderName($library);
         $rootLevelFolder = $this->getRootLevelFolder();
         $destination = 'libraries/' . $name . '/';
         if ($this->folderPrefix) {
@@ -236,8 +279,14 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      */
     public function deleteContent($content): void
     {
-        // TODO: Implement deleteContent() method.
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
+        $id = (string)($content['id'] ?? '');
+        if ($id === '') {
+            return;
+        }
+
+        // Ueber FAL loeschen, nicht per rmdir: sonst bleibt der Dateiindex
+        // (sys_file, sys_file_reference) auf verwaisten Eintraegen sitzen.
+        $this->resolveFolder('content/' . $id . '/', $id)?->delete(true);
     }
 
     /**
@@ -260,15 +309,26 @@ class FileStorage implements H5PFileStorage, SingletonInterface
     /**
      * Get path to a new unique tmp folder.
      *
+     * Liefert einen noch NICHT existierenden, eindeutigen Pfad; nur das
+     * uebergeordnete Verzeichnis wird angelegt. Das entspricht dem Vertrag der
+     * Referenzimplementierung (H5PDefaultStorage::getTmpPath) und ist zwingend,
+     * weil H5PExport denselben Aufruf zweimal mit unterschiedlicher Bedeutung
+     * nutzt: einmal als Verzeichnis, das Core selbst per mkdir() anlegt, und
+     * einmal als Dateipfad fuer das ZIP. Wuerde hier bereits ein Verzeichnis
+     * angelegt, schlaegt ZipArchive::open() auf diesem Pfad fehl.
+     *
+     * Wer ein Verzeichnis braucht, legt es selbst an – siehe
+     * Framework::getUploadedH5pFolderPath().
+     *
      * @return string
      *  Path
      */
     public function getTmpPath(): string
     {
-        $relativeFilename = 'typo3temp/var/h5p/' . sha1(microtime());
-        $destination = Environment::getPublicPath() . '/' . $relativeFilename;
-        GeneralUtility::mkdir_deep($destination);
-        return $destination;
+        $base = Environment::getPublicPath() . '/typo3temp/var/h5p/temp';
+        GeneralUtility::mkdir_deep($base);
+
+        return $base . '/' . uniqid('h5p-', true);
     }
 
     /**
@@ -284,8 +344,16 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      */
     public function exportContent($id, $target): void
     {
-        // TODO: Implement exportContent() method.
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
+        // $target muss auch dann existieren, wenn der Inhalt keine Dateien hat:
+        // H5PExport schreibt unmittelbar danach content.json hinein.
+        GeneralUtility::mkdir_deep($target);
+
+        $contentFolder = $this->resolveFolder('content/' . $id . '/', (string)$id);
+        if ($contentFolder === null) {
+            return;
+        }
+
+        $this->copyFolderToLocal($contentFolder, $target);
     }
 
     /**
@@ -301,8 +369,24 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      */
     public function exportLibrary($library, $target): void
     {
-        // TODO: Implement exportLibrary() method.
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
+        // Achtung: $target ist die WURZEL des Exportverzeichnisses, nicht das Ziel
+        // der Bibliothek. Core ruft exportLibrary($library, $tmpPath, ...) auf und
+        // erwartet die Bibliothek darunter in ihrem eigenen Ordner.
+        //
+        // Ein drittes Argument (Pfad einer Entwicklungs-Bibliothek) reicht Core
+        // zusaetzlich durch; das Interface kennt es nicht und der Entwicklungsmodus
+        // ist hier abgeschaltet, deshalb wird es bewusst ignoriert.
+        $name = H5PCore::libraryToFolderName($library);
+        if ($name === '') {
+            return;
+        }
+
+        $libraryFolder = $this->resolveFolder('libraries/' . $name . '/', $name);
+        if ($libraryFolder === null) {
+            return;
+        }
+
+        $this->copyFolderToLocal($libraryFolder, rtrim($target, '/') . '/' . $name);
     }
 
     /**
@@ -318,8 +402,24 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      */
     public function saveExport($source, $filename): void
     {
-        // TODO: Implement saveExport() method.
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
+        if (!is_file($source)) {
+            return;
+        }
+
+        $exportFolder = $this->resolveFolder('exports/', 'exports');
+        if ($exportFolder === null) {
+            return;
+        }
+
+        // Vorhandene Datei zuerst entfernen, damit keine umbenannte Zweitfassung
+        // (datei_01.h5p) entsteht.
+        $this->deleteExport($filename);
+
+        // Bewusst ueber die Storage-API mit $removeOriginal = false statt ueber
+        // Folder::addFile(): letzteres VERSCHIEBT die Quelldatei. H5PExport will sie
+        // danach aber selbst noch per unlink() aufraeumen (h5p.classes.php:1963) und
+        // liefe sonst in eine Warning. Die Referenzimplementierung kopiert ebenfalls.
+        $this->storage->addFile($source, $exportFolder, $filename, DuplicationBehavior::REPLACE, false);
     }
 
     /**
@@ -332,8 +432,15 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      */
     public function deleteExport($filename): void
     {
-        // TODO: Implement deleteExport() method.
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
+        $filename = (string)$filename;
+        if ($filename === '') {
+            return;
+        }
+
+        $exportFolder = $this->resolveFolder('exports/', 'exports');
+        if ($exportFolder !== null && $exportFolder->hasFile($filename)) {
+            $exportFolder->getFile($filename)->delete();
+        }
     }
 
     /**
@@ -345,10 +452,16 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      * @throws MethodNotImplementedException
      * @throws MethodNotImplementedException
      */
-    public function hasExport($filename): void
+    public function hasExport($filename): bool
     {
-        // TODO: Implement hasExport() method.
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
+        $filename = (string)$filename;
+        if ($filename === '') {
+            return false;
+        }
+
+        $exportFolder = $this->resolveFolder('exports/', 'exports');
+
+        return $exportFolder !== null && $exportFolder->hasFile($filename);
     }
 
     /**
@@ -469,8 +582,23 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      */
     public function deleteCachedAssets($keys): void
     {
-        // TODO: Implement deleteCachedAssets() method.
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
+        $cachedAssetFolder = $this->resolveFolder('cachedassets/', 'cachedassets');
+        if ($cachedAssetFolder === null) {
+            return;
+        }
+
+        foreach ((array)$keys as $key) {
+            $key = (string)$key;
+            if ($key === '') {
+                continue;
+            }
+            foreach (['js', 'css'] as $extension) {
+                $fileName = $key . '.' . $extension;
+                if ($cachedAssetFolder->hasFile($fileName)) {
+                    $cachedAssetFolder->getFile($fileName)->delete();
+                }
+            }
+        }
     }
 
     /**
@@ -722,8 +850,32 @@ class FileStorage implements H5PFileStorage, SingletonInterface
      */
     public function removeContentFile($file, $contentId): void
     {
-        // TODO: Implement removeContentFile() method.
-        MaintenanceUtility::methodMissing(__CLASS__, __FUNCTION__);
+        $id = (string)$contentId;
+        $relativeFile = ltrim(str_replace('\\', '/', (string)$file), '/');
+        if ($id === '' || $relativeFile === '') {
+            return;
+        }
+
+        $contentFolder = $this->resolveFolder('content/' . $id . '/', $id);
+        if ($contentFolder === null) {
+            return;
+        }
+
+        // $file kann einen Unterpfad enthalten (z.B. "images/foo.jpg").
+        $directory = trim((string)dirname($relativeFile), '.');
+        $fileName  = basename($relativeFile);
+
+        $targetFolder = $contentFolder;
+        if ($directory !== '' && $directory !== '/') {
+            if (!$contentFolder->hasFolder($directory)) {
+                return;
+            }
+            $targetFolder = $contentFolder->getSubfolder($directory);
+        }
+
+        if ($targetFolder->hasFile($fileName)) {
+            $targetFolder->getFile($fileName)->delete();
+        }
     }
 
     /**
@@ -800,8 +952,24 @@ class FileStorage implements H5PFileStorage, SingletonInterface
         return file_put_contents($filePath, $stream);
     }
 
+    /**
+     * Remove library folder.
+     *
+     * Wird beim Ersetzen einer bereits installierten Bibliothek aufgerufen
+     * (h5p.classes.php:1676) und ist damit der einzige Teil der Loeschkette, den
+     * H5P heute tatsaechlich erreicht.
+     *
+     * @param array $library Library properties
+     */
     public function deleteLibrary($library): void
     {
-        // Deine Implementierung hier
+        // libraryToString() liefert "Name 1.12" (Leerzeichen); Ordner heissen
+        // "Name-1.12". Das zweite Argument wird von h5p-core ^1.27 ignoriert.
+        $name = H5PCore::libraryToFolderName($library);
+        if ($name === '') {
+            return;
+        }
+
+        $this->resolveFolder('libraries/' . $name . '/', $name)?->delete(true);
     }
 }

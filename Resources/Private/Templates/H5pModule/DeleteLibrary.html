@@ -1,0 +1,62 @@
+<html xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+      xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+      xmlns:be="http://typo3.org/ns/TYPO3/CMS/Backend/ViewHelpers"
+      data-namespace-typo3-fluid="true">
+
+<f:be.pageRenderer includeCssFiles="{0: '{f:uri.resource(path:\'Css/Styles.css\')}'}" />
+
+<f:layout name="Module" />
+
+<f:section name="Content">
+    <h1>Bibliothek löschen</h1>
+
+    <table class="table table-striped">
+        <tbody>
+            <tr><th style="width:12rem">Name</th><td><strong>{library.title}</strong></td></tr>
+            <tr><th>Maschinenname</th><td>{library.machineName}</td></tr>
+            <tr><th>Version</th><td>{library.majorVersion}.{library.minorVersion}.{library.patchVersion}</td></tr>
+            <tr><th>Ordner</th><td><code>fileadmin/h5p/libraries/{library.folderName}</code></td></tr>
+            <tr><th>Verwendet von</th><td>{usedByContent} Inhalten, {usedByLibraries} Bibliotheken</td></tr>
+        </tbody>
+    </table>
+
+    <f:if condition="{usedByContent} > 0 || {usedByLibraries} > 0">
+        <f:then>
+            <div class="callout callout-danger">
+                <div class="callout-body">
+                    <p><strong>Diese Bibliothek wird noch benutzt und kann nicht gelöscht werden.</strong></p>
+                    <p>
+                        Würde sie entfernt, liessen sich die betroffenen Inhalte nicht mehr
+                        darstellen. Erst die Inhalte löschen oder auf eine andere Bibliothek
+                        umstellen, dann erneut versuchen.
+                    </p>
+                </div>
+            </div>
+            <f:link.action action="libraries" additionalParams="{id: id}" class="btn btn-default">
+                Zurück zur Übersicht
+            </f:link.action>
+        </f:then>
+        <f:else>
+            <div class="callout callout-danger">
+                <div class="callout-body">
+                    <p><strong>Diese Aktion lässt sich nicht rückgängig machen.</strong></p>
+                    <p>
+                        Gelöscht werden der Datensatz, der Ordner im Dateisystem, alle
+                        Abhängigkeiten in beide Richtungen und alle Übersetzungen dieser
+                        Bibliothek. Der Papierkorb greift hier nicht.
+                    </p>
+                </div>
+            </div>
+            <f:form action="deleteLibraryConfirm" additionalParams="{id: id}" method="post">
+                <f:form.hidden name="libraryId" value="{library.uid}" />
+                <button type="submit" class="btn btn-danger">
+                    <core:icon identifier="actions-delete" /> Endgültig löschen
+                </button>
+                <f:link.action action="libraries" additionalParams="{id: id}" class="btn btn-default">
+                    Abbrechen
+                </f:link.action>
+            </f:form>
+        </f:else>
+    </f:if>
+</f:section>
+</html>

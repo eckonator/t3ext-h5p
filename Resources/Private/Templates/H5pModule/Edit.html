@@ -11,15 +11,27 @@
     <h1>Edit <em>{content.title}</em></h1>
     <f:form method="post" enctype="multipart/form-data" id="h5p-content-form" action="update" controller="H5pModule">
         <div id="post-body-content">
+            <f:comment>
+                Der Upload-Bereich fehlte hier ganz, obwohl der Controller das Ersetzen
+                eines vorhandenen Inhalts per Paket unterstuetzt. Ohne Dateifeld war der
+                Weg schlicht nicht vorhanden.
+            </f:comment>
+            <div class="h5p-upload">
+                <f:form.upload name="h5p_file" id="h5p-file"/>
+                <p class="text-muted">
+                    Ersetzt diesen Inhalt durch das hochgeladene Paket. Die Inhalts-ID
+                    bleibt erhalten, eingebundene Content-Elemente zeigen weiterhin hierher.
+                </p>
+            </div>
             <div class="h5p-create">
                 <div class="h5p-editor">Waiting for javascript...</div>
             </div>
         </div>
         <div class="postbox h5p-sidebar">
             <h2>Actions</h2>
-            <div id="minor-publishing" style="display:none">
-                <label><input type="radio" name="action" value="upload"/>Upload</label>
-                <label><input type="radio" name="action" value="create"/>Create</label>
+            <div id="minor-publishing" class="h5p-action-bar-settings h5p-panel">
+                <label><input type="radio" name="h5pAction" value="upload"/> Durch .h5p-Datei ersetzen</label>
+                <label><input type="radio" name="h5pAction" value="create"/> Im Editor bearbeiten</label>
                 <f:form.hidden name="contentId" value="{content.uid}"/>
                 <f:form.hidden name="library" id="tx_h5p_web_h5pmanager_library" value="{library}"/>
                 <f:form.hidden name="parameters" id="tx_h5p_web_h5pmanager_parameters" value="{parameters}"/>
@@ -30,19 +42,40 @@
         </div>
         <div class="postbox h5p-sidebar">
             <h2>Display Options</h2>
+            <f:comment>
+                Je Option ein Paar aus "steuerbar" und "aktiv" (siehe
+                H5pModuleController::bereiteAnzeigeoptionenAuf). Nicht steuerbare
+                Optionen werden ausgeblendet statt als wirkungslose Checkbox gezeigt:
+                Sie sind global festgelegt, ein Haken daran bliebe folgenlos.
+            </f:comment>
             <div class="h5p-action-bar-settings h5p-panel">
-                <label>
-                    <f:form.checkbox name="frame" value="true" checked="{f:if(condition: displayOptions.frame, then: 'checked', else: '')}"/>
-                    Display toolbar below content </label>
-                <label title="If checked a reuse button will always be displayed for this content and allow users to download the content as an .h5p file">
-                    <f:form.checkbox name="download" value="true" checked="{f:if(condition: displayOptions.download, then: 'checked', else: '')}"/>
-                    Allow users to download the content </label>
-                <label>
-                    <f:form.checkbox name="embed" value="true" checked="{f:if(condition: displayOptions.embed, then: 'checked', else: '')}"/>
-                    Display Embed button </label>
-                <label>
-                    <f:form.checkbox name="copyright" value="true" checked="{f:if(condition: displayOptions.copyright, then: 'checked', else: '')}"/>
-                    Display Copyright button </label>
+                <f:if condition="{displayOptions.frame.steuerbar}">
+                    <label>
+                        <f:form.checkbox name="frame" value="true" checked="{f:if(condition: displayOptions.frame.aktiv, then: 'checked', else: '')}"/>
+                        Display toolbar below content </label>
+                </f:if>
+                <f:if condition="{displayOptions.download.steuerbar}">
+                    <label title="If checked a reuse button will always be displayed for this content and allow users to download the content as an .h5p file">
+                        <f:form.checkbox name="download" value="true" checked="{f:if(condition: displayOptions.download.aktiv, then: 'checked', else: '')}"/>
+                        Allow users to download the content </label>
+                </f:if>
+                <f:if condition="{displayOptions.embed.steuerbar}">
+                    <label>
+                        <f:form.checkbox name="embed" value="true" checked="{f:if(condition: displayOptions.embed.aktiv, then: 'checked', else: '')}"/>
+                        Display Embed button </label>
+                </f:if>
+                <f:if condition="{displayOptions.copyright.steuerbar}">
+                    <label>
+                        <f:form.checkbox name="copyright" value="true" checked="{f:if(condition: displayOptions.copyright.aktiv, then: 'checked', else: '')}"/>
+                        Display Copyright button </label>
+                </f:if>
+                <f:if condition="!{displayOptions.download.steuerbar} || !{displayOptions.embed.steuerbar}">
+                    <p class="text-muted" style="margin-top:.5em">
+                        Download und/oder Einbetten sind global festgelegt und hier
+                        deshalb nicht einzeln einstellbar. Ändern lässt sich das unter
+                        Admin-Werkzeuge → Einstellungen → Extension Configuration → h5p.
+                    </p>
+                </f:if>
             </div>
         </div>
     </f:form>

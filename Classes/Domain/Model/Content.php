@@ -195,15 +195,38 @@ class Content extends AbstractEntity
             $this->setParameters($contentData['params']);
 
             // "H5P Metadata"
-            $this->setTitle(html_entity_decode($contentData['metadata']->title));
-            $this->setAuthors(empty($contentData['metadata']->authors) ? '' : json_encode($contentData['metadata']->authors));
-            $this->setSource(empty($contentData['metadata']->source) ? '' : $contentData['metadata']->source);
-            $this->setLicense(empty($contentData['metadata']->license) ? '' : $contentData['metadata']->license);
-            $this->setLicenseVersion(empty($contentData['metadata']->licenseVersion) ? '' : $contentData['metadata']->licenseVersion);
-            $this->setLicenseExtras(empty($contentData['metadata']->licenseExtras) ? '' : $contentData['metadata']->licenseExtras);
-            $this->setAuthorComments(empty($contentData['metadata']->authorComments) ? '' : $contentData['metadata']->authorComments);
-            $this->setChanges(empty($contentData['metadata']->changes) ? '' : json_encode($contentData['metadata']->changes));
+            //
+            // Aus dem Editor kommen die Metadaten als stdClass, beim Import eines
+            // .h5p-Pakets stammen sie aus dessen h5p.json und koennen als Array oder
+            // gar nicht vorliegen - H5PStorage::savePackage() setzt den Schluessel
+            // nicht. Frueher endete das in "Undefined array key metadata".
+            $metadaten = self::metadatenAlsObjekt($contentData);
+
+            $this->setTitle(html_entity_decode((string)($metadaten->title ?? $this->getTitle())));
+            $this->setAuthors(empty($metadaten->authors) ? '' : json_encode($metadaten->authors));
+            $this->setSource(empty($metadaten->source) ? '' : (string)$metadaten->source);
+            $this->setLicense(empty($metadaten->license) ? '' : (string)$metadaten->license);
+            $this->setLicenseVersion(empty($metadaten->licenseVersion) ? '' : (string)$metadaten->licenseVersion);
+            $this->setLicenseExtras(empty($metadaten->licenseExtras) ? '' : (string)$metadaten->licenseExtras);
+            $this->setAuthorComments(empty($metadaten->authorComments) ? '' : (string)$metadaten->authorComments);
+            $this->setChanges(empty($metadaten->changes) ? '' : json_encode($metadaten->changes));
         }
+    }
+
+    /**
+     * Metadaten in einer Form, auf die sich der Rest verlassen kann.
+     *
+     * @param array<string, mixed> $contentData
+     */
+    private static function metadatenAlsObjekt(array $contentData): object
+    {
+        $metadaten = $contentData['metadata'] ?? null;
+
+        if (is_array($metadaten)) {
+            return (object)$metadaten;
+        }
+
+        return is_object($metadaten) ? $metadaten : new \stdClass();
     }
 
     public function determineEmbedType(): void

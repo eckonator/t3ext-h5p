@@ -14,7 +14,13 @@ return [
         'extensionName'  => 'H5p',
 
         'controllerActions' => [
-            H5pModuleController::class => ['content', 'index', 'new', 'edit', 'create', 'libraries', 'show', 'update', 'consent', 'error'],
+            // Ohne Eintrag hier erzeugt f:uri.action() eine LEERE URL - die Aktion
+            // existiert fuer das Backend-Modul schlicht nicht.
+            H5pModuleController::class => [
+                'content', 'index', 'new', 'edit', 'create', 'libraries', 'show', 'update',
+                'consent', 'error',
+                'deleteContent', 'deleteContentConfirm', 'deleteLibrary', 'deleteLibraryConfirm',
+            ],
         ],
 //        'routes'         => [
 //            '_default' => [

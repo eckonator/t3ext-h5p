@@ -48,6 +48,11 @@
                                        href="{f:uri.action(action: 'edit', arguments: '{contentId: content.uid}', additionalParams: '{id: id}')}">
                                         <core:icon identifier="actions-document-open"/>
                                     </a>
+                                    <a class="btn btn-default"
+                                       href="{f:uri.action(action: 'deleteContent', arguments: '{contentId: content.uid}', additionalParams: '{id: id}')}"
+                                       title="Löschen">
+                                        <core:icon identifier="actions-delete"/>
+                                    </a>
                                 </div>
                             </td>
                         </tr>

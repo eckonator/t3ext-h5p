@@ -8,3 +8,9 @@
 #displayCopyright = 1
 # cat=basic/enable/050; type=boolean; label=LLL:EXT:h5p/Resources/Private/Language/locallang.xlf:settings.onlyAllowRecordsInSysfolders:
 onlyAllowRecordsInSysfolders = 0
+# cat=basic/enable/060; type=boolean; label=Export aktivieren: Erzeugt beim Speichern eines Inhalts eine .h5p-Datei zum Download (Reuse-Button). Kostet bei jedem Speichern Zeit und Plattenplatz.
+enableExport = 0
+# cat=basic/enable/070; type=options[Immer anzeigen=3,Vom Autor steuerbar - Standard an=1,Vom Autor steuerbar - Standard aus=2,Nie anzeigen=0]; label=Download-Button: Steuert den Reuse-/Download-Button. Nur bei "vom Autor steuerbar" wirkt die Checkbox am einzelnen Inhalt.
+displayOptionDownload = 3
+# cat=basic/enable/080; type=options[Immer anzeigen=3,Vom Autor steuerbar - Standard an=1,Vom Autor steuerbar - Standard aus=2,Nie anzeigen=0]; label=Embed-Button: Steuert den Einbetten-Button. Nur bei "vom Autor steuerbar" wirkt die Checkbox am einzelnen Inhalt.
+displayOptionEmbed = 3

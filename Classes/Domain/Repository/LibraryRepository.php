@@ -53,7 +53,9 @@ class LibraryRepository extends Repository
 
         $query->matching(
             $query->logicalAnd(
-                $query->equals('name', $library->getTitle()),
+                // war 'name' -> diese Spalte gibt es nicht, die Methode warf
+                // "Unknown column 'tx_h5p_domain_model_library.name'".
+                $query->equals('machineName', $library->getMachineName()),
                 $query->logicalNot($query->equals('uid', $library->getUid())),
                 $query->logicalOr(
                     $query->greaterThan('majorVersion', $library->getMajorVersion()),

@@ -25,7 +25,11 @@
             }
 
             var h5peditor;
-            var $type = $('input[name="action"]');
+            // Bewusst NICHT "action": das ist ein reserviertes Extbase-Argument. Hiess das
+            // Feld so, sendete das Bearbeiten-Formular action=create mit, Extbase rief
+            // createAction() statt updateAction() auf - und jedes Speichern legte eine
+            // Kopie an, statt den Inhalt zu aendern.
+            var $type = $('input[name="h5pAction"]');
             var $upload = $('.h5p-upload');
             var $create = $('.h5p-create').hide();
             var $editor = $('.h5p-editor');

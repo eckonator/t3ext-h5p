@@ -18,6 +18,7 @@
                 <th>Machine name</th>
                 <th>Last updated</th>
                 <th>Runnable</th>
+                <th></th>
             </tr>
             </thead>
             <tbody>
@@ -34,13 +35,20 @@
                             <f:then>✔</f:then>
                         </f:if>
                     </td>
+                    <td class="col-control nowrap">
+                        <a class="btn btn-default"
+                           href="{f:uri.action(action: 'deleteLibrary', arguments: '{libraryId: library.uid}', additionalParams: '{id: id}')}"
+                           title="Löschen">
+                            <core:icon identifier="actions-delete"/>
+                        </a>
+                    </td>
                 </tr>
             </f:for>
             <f:comment>
                 Footer row: no officially defined style yet
             </f:comment>
             <tr>
-                <td colspan="5">
+                <td colspan="6">
                     <f:count subject="{libraries}"/>
                     <f:translate key="module.menu.libraries"/>
                 </td>

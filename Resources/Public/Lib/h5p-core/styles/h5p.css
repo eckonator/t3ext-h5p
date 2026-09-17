@@ -59,6 +59,12 @@ html.h5p-iframe .h5p-content {
   -webkit-text-size-adjust: none;
   text-size-adjust: none;
 }
+.h5p-sort-paragraphs-task-description p,
+.h5p-question-introduction p,
+.h5p-questionn p:first-child {
+    font-weight: bold;
+    line-height: 1.3em;
+}
 html.h5p-iframe .h5p-fullscreen .h5p-content,
 html.h5p-iframe .h5p-semi-fullscreen .h5p-content {
   height: 100%;

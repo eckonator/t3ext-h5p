@@ -25,6 +25,7 @@ use MichielRoos\H5p\Domain\Repository\ContentResultRepository;
 use MichielRoos\H5p\Domain\Repository\PageRepository;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Core\Page\PageRenderer;
@@ -45,6 +46,14 @@ use TYPO3\CMS\Frontend\ContentObject\ContentObjectRenderer;
  */
 class ViewController extends ActionController
 {
+    /**
+     * Seitentyp der eingebetteten Ausgabe.
+     *
+     * Muss mit dem typeNum des PAGE-Objekts h5pEmbedded in ext_localconf.php
+     * uebereinstimmen.
+     */
+    private const SEITENTYP_EINGEBETTET = 723442;
+
     /**
      * Content repository
      *
@@ -121,7 +130,7 @@ class ViewController extends ActionController
         $this->h5pFramework = GeneralUtility::makeInstance(Framework::class);
         $this->h5pFramework->setStorage($storage); // Storage nachträglich setzen
         $this->h5pFileStorage = GeneralUtility::makeInstance(FileStorage::class, $storage);
-        $this->h5pCore = GeneralUtility::makeInstance(CoreFactory::class, $this->h5pFramework, $this->h5pFileStorage, $this->language);
+        $this->h5pCore = GeneralUtility::makeInstance(CoreFactory::class, $this->h5pFramework, $this->h5pFileStorage, '', $this->language);
 
         parent::initializeAction();
     }
@@ -158,7 +167,7 @@ class ViewController extends ActionController
         $this->h5pFramework = GeneralUtility::makeInstance(Framework::class);
         $this->h5pFramework->setStorage($storage); // Storage nachträglich setzen
         $this->h5pFileStorage = GeneralUtility::makeInstance(FileStorage::class, $storage);
-        $this->h5pCore = GeneralUtility::makeInstance(CoreFactory::class, $this->h5pFramework, $this->h5pFileStorage, $this->language);
+        $this->h5pCore = GeneralUtility::makeInstance(CoreFactory::class, $this->h5pFramework, $this->h5pFileStorage, '', $this->language);
 
         $relativeCorePath = PathUtility::getPublicResourceWebPath('EXT:h5p/Resources/Public/Lib/h5p-core/');
 
@@ -166,7 +175,10 @@ class ViewController extends ActionController
             $this->pageRenderer->addJsFooterFile($relativeCorePath . $script, 'text/javascript', false, false, '', true);
         }
         foreach (H5PCore::$styles as $style) {
-            $this->pageRenderer->addCssFile($relativeCorePath . $style);
+            // Wie in indexAction von der Zusammenfassung ausnehmen: Der
+            // ResourceCompressor liest die Dateien sonst selbst ein und quittiert
+            // eine fehlende mit HTTP 500 statt eines stillen 404.
+            $this->pageRenderer->addCssFile($relativeCorePath . $style, 'stylesheet', 'all', '', false, false, '', true);
         }
 
         /** @var Content $content */
@@ -183,13 +195,10 @@ class ViewController extends ActionController
         );
 
 
+        // Die Anzeigeoptionen kamen hier aus Request-Argumenten, die es im Frontend
+        // nie gibt - damit war alles aus, und 'export' war ueberhaupt auskommentiert.
+        // Sie stehen jetzt in getContentSettings() und stammen aus dem Inhalt.
         $contentSettings = $this->getContentSettings($content);
-        $contentSettings['displayOptions'] = [];
-        $contentSettings['displayOptions']['frame'] = $this->request->hasArgument('frame') && (bool)$this->request->getArgument('frame');
-        //$contentSettings['displayOptions']['export'] = \H5PCore::DISABLE_DOWNLOAD;
-        $contentSettings['displayOptions']['embed'] = $this->request->hasArgument('embed') && (bool)$this->request->getArgument('embed');
-        $contentSettings['displayOptions']['copyright'] = $this->request->hasArgument('copyright') && (bool)$this->request->getArgument('copyright');
-        $contentSettings['displayOptions']['icon'] = $this->request->hasArgument('icon') && (bool)$this->request->getArgument('icon');
         $this->pageRenderer->addJsInlineCode(
             'H5PIntegration contents cid-' . $content->getUid(),
             'H5PIntegration.contents[\'cid-' . $content->getUid() . '\'] = ' . json_encode($contentSettings) . ';', false, false, true
@@ -263,13 +272,9 @@ class ViewController extends ActionController
             $this->pageRenderer->addCssFile($relativeCorePath . $style, 'stylesheet', 'all', '', false, false, '', true);
         }
 
+        // Vorher waren die Anzeigeoptionen hier fest auf false verdrahtet; jetzt
+        // stammen sie aus dem Inhalt (siehe getContentSettings()).
         $contentSettings = $this->getContentSettings($content);
-        $contentSettings['displayOptions'] = [];
-        $contentSettings['displayOptions']['frame'] = true;
-        $contentSettings['displayOptions']['export'] = false;
-        $contentSettings['displayOptions']['embed'] = false;
-        $contentSettings['displayOptions']['copyright'] = false;
-        $contentSettings['displayOptions']['icon'] = true;
         $this->pageRenderer->addJsInlineCode(
             'H5PIntegration contents cid-' . $content->getUid(),
             'H5PIntegration.contents[\'cid-' . $content->getUid() . '\'] = ' . json_encode($contentSettings) . ';', false, false, true
@@ -317,7 +322,13 @@ class ViewController extends ActionController
      */
     public function statisticsAction(): ResponseInterface
     {
-        if (!$GLOBALS['TSFE']->loginUser) {
+        // TSFE->loginUser gibt es seit TYPO3 13 nicht mehr; der Login-Status kommt
+        // jetzt aus dem Context-Aspect 'frontend.user'.
+        $isLoggedIn = GeneralUtility::makeInstance(Context::class)
+            ->getAspect('frontend.user')
+            ->isLoggedIn();
+
+        if (!$isLoggedIn) {
             $this->view->assign('notLoggedIn', true);
             return $this->htmlResponse(null);
         }
@@ -444,12 +455,55 @@ class ViewController extends ActionController
      * @param Content $content
      * @return array;
      */
+    /**
+     * Pfad zur Exportdatei eines Inhalts.
+     *
+     * Der Name entsteht in H5PExport::createExportFile() aus Slug und Id; hier wird
+     * er nachgebildet. Die Datei existiert nur, wenn der Export eingeschaltet ist
+     * (Extension-Konfiguration "enableExport") UND der Inhalt danach einmal
+     * gespeichert wurde.
+     */
+    private function ermittleExportUrl(Content $content): string
+    {
+        $slug = $content->getSlug();
+
+        return '/fileadmin/h5p/exports/' . ($slug !== '' ? $slug . '-' : '') . $content->getUid() . '.h5p';
+    }
+
+    /**
+     * Anzeigeoptionen fuer die Ausgabe im Frontend.
+     *
+     * Steuert die Leiste unter dem Inhalt: Reuse/Download, Einbetten, Copyright.
+     * Die Entscheidung trifft H5P anhand des gespeicherten disable-Feldes und der
+     * globalen Einstellungen; das Rechte-Argument ist hier die Inhalts-Id.
+     *
+     * "icon" (der H5P-Knopf mit Link zu h5p.org) kennt getDisplayOptionsForView()
+     * nicht und wird deshalb ergaenzt.
+     *
+     * @return array<string, bool>
+     */
+    private function ermittleAnzeigeoptionen(Content $content): array
+    {
+        $optionen = $this->h5pCore->getDisplayOptionsForView($content->getDisable(), $content->getUid());
+        $optionen[H5PCore::DISPLAY_OPTION_ABOUT] = true;
+
+        return $optionen;
+    }
+
     public function getContentSettings(Content $content)
     {
 
-        $embeddedUrl = GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . 'h5p/embed/' . $content->getUid();
-        //$embeddedUrl = $this->uriBuilder->setTargetPageType(723442)->setArguments(['tx_h5p_embedded' => ['contentId' => $content->getUid()]])->setCreateAbsoluteUri(true)->buildFrontendUri();
-        $embeddedUrl = '<iframe src="' . $embeddedUrl . '" width=":w" height=":h" frameborder="0" allowfullscreen="allowfullscreen" allow="geolocation *; microphone *; camera *; midi *; encrypted-media *" title="' . $content->getTitle() . '"></iframe>';
+        // Die Adresse zeigte frueher fest auf /h5p/embed/<uid> - eine Route, die es
+        // nie gab, der Einbetten-Knopf lieferte also einen Schnipsel mit 404-Ziel.
+        // Jetzt ueber den Seitentyp 723442, den ext_localconf.php registriert.
+        $embeddedUrl = $this->uriBuilder
+            ->reset()
+            ->setTargetPageType(self::SEITENTYP_EINGEBETTET)
+            ->setArguments(['tx_h5p_embedded' => ['contentId' => $content->getUid()]])
+            ->setCreateAbsoluteUri(true)
+            ->buildFrontendUri();
+
+        $embeddedUrl = '<iframe src="' . htmlspecialchars($embeddedUrl) . '" width=":w" height=":h" frameborder="0" allowfullscreen="allowfullscreen" allow="geolocation *; microphone *; camera *; midi *; encrypted-media *" title="' . htmlspecialchars($content->getTitle()) . '"></iframe>';
 
         $uriPrefix = GeneralUtility::getIndpEnv('TYPO3_REQUEST_HOST') . $GLOBALS['TSFE']->absRefPrefix;
         $resizeCodeUrl = $uriPrefix . 'typo3conf/ext/h5p/Resources/Public/JavaScript/h5p-resizer.js';
@@ -466,18 +520,16 @@ class ViewController extends ActionController
             ),
             'jsonContent' => $content->getFiltered(),
             'fullScreen' => false,
-            'exportUrl' => '/path/to/download.h5p',
+            'exportUrl' => $this->ermittleExportUrl($content),
             'embedCode' => $embeddedUrl,
             'resizeCode' => $resizeCodeUrl,
             'mainId' => $content->getUid(),
             'title' => $content->getTitle(),
-            'displayOptions' => [
-                'frame' => false,
-                'export' => false,
-                'embed' => false,
-                'copyright' => false,
-                'icon' => false
-            ]
+            // Aus dem Inhalt lesen, nicht fest verdrahten. getDisplayOptionsForView()
+            // beruecksichtigt dabei zugleich die globalen Einstellungen
+            // (H5PDisplayOptionBehaviour) und liefert die Schluessel, die das
+            // H5P-JavaScript erwartet - insbesondere 'export' statt 'download'.
+            'displayOptions' => $this->ermittleAnzeigeoptionen($content),
         ];
 
         if ($content->getEmbedType() === 'iframe') {
