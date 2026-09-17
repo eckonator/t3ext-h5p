@@ -5,8 +5,9 @@ Präsentationen. Diese Extension bindet den offiziellen H5P-Kern in TYPO3 ein �
 Backend-Modul zum Anlegen und Verwalten, Frontend-Plugin zur Ausgabe sowie Import
 und Export von `.h5p`-Paketen.
 
-*Note:*
-Please also read the <a href="https://github.com/eckonator/t3ext-h5p/tree/v13/patches">README.md</a> inside the <strong>patches</strong>-subdirectory. It explains how the H5P libraries need to be patched for PHP 8.2 compatibility.
+> **Hinweis.** Die [README im Verzeichnis `patches`](https://github.com/eckonator/t3ext-h5p/tree/v13/patches)
+> gehört dazu. Sie erklärt, welche Patches die H5P-Bibliotheken für PHP 8.2
+> benötigen und wie sie eingespielt werden.
 
 - Über H5P: <https://h5p.org/>
 - Verfügbare Inhaltstypen: <https://h5p.org/content-types-and-applications>
